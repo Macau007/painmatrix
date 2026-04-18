@@ -1,0 +1,7 @@
+# PainMatrix PainMatrix
+# No external dependencies required - uses Python standard library only
+# Python >= 3.8
+
+# Development dependencies (optional)
+pytest>=7.0.0
+black>=23.0.0
