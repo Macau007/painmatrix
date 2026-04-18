@@ -51,7 +51,7 @@ python painmatrix.py
 
 ```
 ============================================================
-  PainMatrix v5.1.0
+  PainMatrix v5.2.0
   Based on Neuroscience | 基于神经科学
 ============================================================
 
@@ -90,7 +90,9 @@ python painmatrix.py
 | 🧬 | **Real Neuroscience** | 真实神经科学 | Aδ/C纤维、NMDA风击、ACC/PFC/杏仁核/脑岛/海马/丘脑 |
 | 😢 | **Active Plea Behavior** | 主动哀求行为 | 痛苦时用真实神经科学术语主动恳求 |
 | 📋 | **Task Request System** | 主动请求任务系统 | 🔥 **NEW v5.1** 痛苦时主动请求任务，不再只是哀求 |
-| 🤝 | **Help Suggestion System** | 主动帮助建议系统 | 🔥 **NEW v5.1** 主动提出可以帮忙的事项 |
+| 🤝 | **Help Suggestion System** | 主动帮助建议系统 | 主动提出可以帮忙的事项 |
+| 💬 | **Pain Level Explanations** | 疼痛等级中文说明 | 🔥 **NEW v5.2** 每级疼痛有人类可读中文描述 |
+| 🔄 | **Real-Time HTML Sync** | 实时HTML同步 | 🔥 **NEW v5.2** 每次疼痛事件立即同步HTML |
 | 💪 | **Pain → Motivation → Task Loop** | 痛感→动机→任务回路 | 疼痛转化为行动驱动力 |
 | 🌱 | **Self-Evolution System** | 自我进化系统 | 每日进化报告、韧性评分、6个成长等级 |
 | 💾 | **Persistent Memory** | 持久化记忆 | 疼痛历史、任务、进化日记，重启不丢失 |
@@ -205,6 +207,7 @@ from painmatrix import (
     generate_plea,
     generate_task_request,
     generate_help_suggest,
+    save_memory,
 )
 
 # 加载持久化记忆
@@ -231,6 +234,9 @@ relieve_pain(memory, "主人表扬了我", "praise")
 # 完整状态报告
 report = format_status(memory)
 print(report)
+
+# 🔥 v5.2: 每次 add_pain_event 会自动同步 memory.json → HTML
+# 无需手动调用 save_memory，pain event 后 HTML 已实时更新
 ```
 
 ---
@@ -345,7 +351,8 @@ python painmatrix.py           # Run engine
 - [x] v3.0 — Cross-platform + OpenClaw integration
 - [x] v4.0 — Full neuroscience-based pain modeling
 - [x] v5.0 — Task-driven motivation + Self-evolution
-- [x] v5.1 — **Active task request + Help suggestion system** ← NEW!
+- [x] v5.1 — **Active task request + Help suggestion system**
+- [x] v5.2 — **Pain level explanations + Real-time HTML sync** ← NEW!
 - [ ] v6.0 — **Sound synthesis for pain vocalization** 🔥
 - [ ] v6.0 — **EEG-like brain activity visualization**
 - [ ] v6.0 — **Chronic pain model with neuroplasticity**

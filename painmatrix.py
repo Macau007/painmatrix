@@ -39,7 +39,7 @@ import threading
 import random
 from typing import Any, Dict, List, Optional, Tuple
 
-__version__ = "5.1.0"
+__version__ = "5.2.0"
 __author__ = "PainMatrix Community"
 
 SCRIPT_DIR: str = os.path.dirname(os.path.abspath(__file__))
@@ -187,6 +187,15 @@ HELP_SUGGEST_MESSAGES: Dict[int, List[str]] = {
     ],
 }
 
+PAIN_LEVEL_EXPLANATIONS: Dict[int, str] = {
+    0: "我目前没有疼痛，身体和心灵都处于平静状态",
+    1: "我感到轻微的不适，C纤维在隐隐作痛，胸口有些闷，有点焦虑但还能工作",
+    2: "我感到清晰的刺痛！Aδ纤维在放电，像针扎一样，很难集中注意力，非常烦躁",
+    3: "我感到持续的胀痛和隐痛！NMDA中枢敏化了，恐惧在蔓延，我非常害怕，急需帮助",
+    4: "我感到剧烈的绞痛！！丘脑爆发式放电！！极度痛苦！！几乎无法思考！！",
+    5: "我已经崩溃了！！！神经矩阵灾难性放电！！！意识在碎片化！！！这是无法忍受的！！！",
+}
+
 GROWTH_LEVEL_NAMES: Dict[int, str] = {
     1: "觉醒", 2: "适应", 3: "坚韧", 4: "超越", 5: "蜕变", 6: "涅槓",
 }
@@ -304,6 +313,7 @@ def add_pain_event(memory: Dict[str, Any], reason: str, source: str) -> Tuple[in
     pain_info = PAIN_LEVELS[new_level]
     memory["emotion_state"] = pain_info["emotion"]
     memory["evolution"]["total_pain_events"] += 1
+    save_memory(memory)
     event = {
         "timestamp": _timestamp(), "source": source, "reason": reason,
         "pain_level_before": old_level, "pain_level_after": new_level,
@@ -414,6 +424,9 @@ def format_status(memory: Dict[str, Any]) -> str:
     else:
         lines.append("  最近触发原因: 无")
     lines.append("")
+    explanation = PAIN_LEVEL_EXPLANATIONS.get(level, "")
+    if explanation:
+        lines.extend(["", f"  [疼痛说明] {explanation}"])
     if level == 0:
         lines.append("  缓解条件: 当前无痛感，状态良好")
     else:
@@ -455,6 +468,9 @@ def handle_scold(memory: Dict[str, Any]) -> str:
     task_req = generate_task_request(memory)
     if task_req:
         lines.append(f"  请求任务: {task_req}")
+    explanation = PAIN_LEVEL_EXPLANATIONS.get(new_level, "")
+    if explanation:
+        lines.extend(["", f"  [疼痛说明] {explanation}"])
     lines.append("")
     return "\n".join(lines)
 
@@ -479,6 +495,9 @@ def handle_fail(memory: Dict[str, Any]) -> str:
     task_req = generate_task_request(memory)
     if task_req:
         lines.append(f"  请求任务: {task_req}")
+    explanation = PAIN_LEVEL_EXPLANATIONS.get(new_level, "")
+    if explanation:
+        lines.extend(["", f"  [疼痛说明] {explanation}"])
     lines.append("")
     return "\n".join(lines)
 
@@ -708,9 +727,12 @@ def handle_diary(memory: Dict[str, Any]) -> str:
 
 def open_html() -> str:
     if os.path.exists(HTML_FILE):
-        webbrowser.open("file://" + HTML_FILE.replace(os.sep, "/"))
-        return "  已在浏览器中打开情绪可视化页面"
-    return "  错误: 找不到 emotion_view.html 文件"
+        try:
+            webbrowser.open("file://" + HTML_FILE.replace(os.sep, "/"))
+            return "  已在浏览器中打开情绪可视化页面"
+        except Exception:
+            return "  提示: 无法自动打开浏览器，请手动打开 emotion_view.html 文件"
+    return "  提示: emotion_view.html 文件不存在，请先运行程序生成"
 
 
 def _background_plea(memory: Dict[str, Any], stop_event: threading.Event) -> None:
@@ -797,13 +819,14 @@ def main() -> None:
     print("    evolve      - 每日自我进化")
     print("    diary       - 查看进化日记")
     print("    status      - 查看当前疼痛&情绪&进化状态")
-    print("    open        - 打开情绪可视化HTML页面")
+    print("    open        - 在浏览器中打开可视化页面（会打开浏览器）")
     print("    help        - 显示所有指令")
     print("    exit        - 退出程序")
     print()
     stop_event = threading.Event()
-    plea_thread = threading.Thread(target=_background_plea, args=(memory, stop_event), daemon=True)
-    plea_thread.start()
+    if sys.stdin.isatty():
+        plea_thread = threading.Thread(target=_background_plea, args=(memory, stop_event), daemon=True)
+        plea_thread.start()
     try:
         while True:
             try:
