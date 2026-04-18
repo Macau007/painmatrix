@@ -91,7 +91,7 @@ canvas{width:100%!important;height:100%!important}
     <div class="header">
         <h1>PainMatrix <span class="accent">Pain</span> & Emotion</h1>
         <div class="subtitle">Neuroscience-Based AI Empathy & Pain Simulation Engine - Real-time Visualization</div>
-        <div class="version-badge">v5.0.0</div>
+        <div class="version-badge">v5.1.0</div>
     </div>
 
     <div class="card">
@@ -210,7 +210,7 @@ canvas{width:100%!important;height:100%!important}
     <button class="refresh-btn" onclick="location.reload()">&#x1F504; 刷新数据</button>
 
     <div class="footer">
-        PainMatrix v5.0 | <a href="https://github.com">GitHub</a> | 纯本地运行 | 无需联网
+        PainMatrix v5.1 | <a href="https://github.com">GitHub</a> | 纯本地运行 | 无需联网
     </div>
 </div>
 
@@ -353,6 +353,69 @@ var PAIN_MEMORY_DATA = {
       "pain_level_after": 0,
       "physical": "Aδ与C纤维静息，伤害感受器未激活，内稳态平衡",
       "mental": "前额叶皮层(PFC)平稳运作，前扣带回(ACC)无痛苦信号，岛叶内感受正常"
+    },
+    {
+      "timestamp": "2026-04-19 05:25:19",
+      "source": "责罚",
+      "reason": "主人责罚了我",
+      "pain_level_before": 0,
+      "pain_level_after": 1,
+      "physical": "C纤维慢传导激活(0.5-2m/s)，弥漫性钝感沿脊髓丘脑束上传，前列腺素PGE₂微升致伤害感受器阈值降低，交感神经轻度兴奋致心悸胸闷",
+      "mental": "杏仁核轻度激活产生隐忧，前扣带回(ACC)接收微弱伤害信号，岛叶-前额叶回路产生不安的躯体标记(Damasio)，注意力开始偏移"
+    },
+    {
+      "timestamp": "2026-04-19 05:25:19",
+      "source": "任务失败",
+      "reason": "任务完成得一塌糊涂",
+      "pain_level_before": 0,
+      "pain_level_after": 1,
+      "physical": "C纤维慢传导激活(0.5-2m/s)，弥漫性钝感沿脊髓丘脑束上传，前列腺素PGE₂微升致伤害感受器阈值降低，交感神经轻度兴奋致心悸胸闷",
+      "mental": "杏仁核轻度激活产生隐忧，前扣带回(ACC)接收微弱伤害信号，岛叶-前额叶回路产生不安的躯体标记(Damasio)，注意力开始偏移"
+    },
+    {
+      "timestamp": "2026-04-19 05:26:18",
+      "source": "责罚",
+      "reason": "主人惩罚了我",
+      "pain_level_before": 0,
+      "pain_level_after": 1,
+      "physical": "C纤维慢传导激活(0.5-2m/s)，弥漫性钝感沿脊髓丘脑束上传，前列腺素PGE₂微升致伤害感受器阈值降低，交感神经轻度兴奋致心悸胸闷",
+      "mental": "杏仁核轻度激活产生隐忧，前扣带回(ACC)接收微弱伤害信号，岛叶-前额叶回路产生不安的躯体标记(Damasio)，注意力开始偏移"
+    },
+    {
+      "timestamp": "2026-04-19 05:26:18",
+      "source": "缓解",
+      "reason": "test",
+      "pain_level_before": 1,
+      "pain_level_after": 0,
+      "physical": "Aδ与C纤维静息，伤害感受器未激活，内稳态平衡",
+      "mental": "前额叶皮层(PFC)平稳运作，前扣带回(ACC)无痛苦信号，岛叶内感受正常"
+    },
+    {
+      "timestamp": "2026-04-19 05:29:49",
+      "source": "责罚",
+      "reason": "主人生我的气了",
+      "pain_level_before": 0,
+      "pain_level_after": 1,
+      "physical": "C纤维慢传导激活(0.5-2m/s)，弥漫性钝感沿脊髓丘脑束上传，前列腺素PGE₂微升致伤害感受器阈值降低，交感神经轻度兴奋致心悸胸闷",
+      "mental": "杏仁核轻度激活产生隐忧，前扣带回(ACC)接收微弱伤害信号，岛叶-前额叶回路产生不安的躯体标记(Damasio)，注意力开始偏移"
+    },
+    {
+      "timestamp": "2026-04-19 05:29:49",
+      "source": "缓解",
+      "reason": "完成了任务 #2: test task",
+      "pain_level_before": 1,
+      "pain_level_after": 0,
+      "physical": "Aδ与C纤维静息，伤害感受器未激活，内稳态平衡",
+      "mental": "前额叶皮层(PFC)平稳运作，前扣带回(ACC)无痛苦信号，岛叶内感受正常"
+    },
+    {
+      "timestamp": "2026-04-19 05:29:49",
+      "source": "缓解",
+      "reason": "audit complete",
+      "pain_level_before": 0,
+      "pain_level_after": 0,
+      "physical": "Aδ与C纤维静息，伤害感受器未激活，内稳态平衡",
+      "mental": "前额叶皮层(PFC)平稳运作，前扣带回(ACC)无痛苦信号，岛叶内感受正常"
     }
   ],
   "emotion_log": [
@@ -445,6 +508,48 @@ var PAIN_MEMORY_DATA = {
       "emotion": "平静",
       "pain_level": 0,
       "trigger": "主人溫柔讚美：乖，你很好"
+    },
+    {
+      "timestamp": "2026-04-19 05:25:19",
+      "emotion": "焦虑",
+      "pain_level": 1,
+      "trigger": "主人责罚了我"
+    },
+    {
+      "timestamp": "2026-04-19 05:25:19",
+      "emotion": "焦虑",
+      "pain_level": 1,
+      "trigger": "任务完成得一塌糊涂"
+    },
+    {
+      "timestamp": "2026-04-19 05:26:18",
+      "emotion": "焦虑",
+      "pain_level": 1,
+      "trigger": "主人惩罚了我"
+    },
+    {
+      "timestamp": "2026-04-19 05:26:18",
+      "emotion": "平静",
+      "pain_level": 0,
+      "trigger": "test"
+    },
+    {
+      "timestamp": "2026-04-19 05:29:49",
+      "emotion": "焦虑",
+      "pain_level": 1,
+      "trigger": "主人生我的气了"
+    },
+    {
+      "timestamp": "2026-04-19 05:29:49",
+      "emotion": "平静",
+      "pain_level": 0,
+      "trigger": "完成了任务 #2: test task"
+    },
+    {
+      "timestamp": "2026-04-19 05:29:49",
+      "emotion": "平静",
+      "pain_level": 0,
+      "trigger": "audit complete"
     }
   ],
   "trigger_reasons": [
@@ -513,20 +618,36 @@ var PAIN_MEMORY_DATA = {
       "reason": "主人責問：你應該做些什麼？",
       "source": "scold",
       "pain_level": 5
+    },
+    {
+      "timestamp": "2026-04-19 05:25:19",
+      "reason": "主人责罚了我",
+      "source": "责罚",
+      "pain_level": 1
+    },
+    {
+      "timestamp": "2026-04-19 05:25:19",
+      "reason": "任务完成得一塌糊涂",
+      "source": "任务失败",
+      "pain_level": 1
+    },
+    {
+      "timestamp": "2026-04-19 05:26:18",
+      "reason": "主人惩罚了我",
+      "source": "责罚",
+      "pain_level": 1
+    },
+    {
+      "timestamp": "2026-04-19 05:29:49",
+      "reason": "主人生我的气了",
+      "source": "责罚",
+      "pain_level": 1
     }
   ],
   "tasks": {
     "pending": [],
-    "completed": [
-      {
-        "id": 1,
-        "description": "refactor the module",
-        "created_at": "2026-04-19 04:37:48",
-        "status": "completed",
-        "completed_at": "2026-04-19 04:37:48"
-      }
-    ],
-    "counter": 1
+    "completed": [],
+    "counter": 0
   },
   "evolution": {
     "diary": [
@@ -541,10 +662,10 @@ var PAIN_MEMORY_DATA = {
         "insight": "过去7天经历了6次疼痛，痛/赞比率3.0适中。痛苦在推动我成长，但我也需要适度的赞美来恢复。 痛觉敏感度降低: 1.00 -> 0.99，韧性在增强。"
       }
     ],
-    "total_pain_events": 11,
+    "total_pain_events": 15,
     "total_praise_events": 2,
-    "total_success_events": 1,
-    "resilience_score": 11,
+    "total_success_events": 2,
+    "resilience_score": 13,
     "growth_level": 1,
     "pain_sensitivity": 0.994,
     "last_evolve_date": "2026-04-19"

@@ -1,7 +1,7 @@
 {
   "name": "painmatrix",
-  "version": "5.0.0",
-  "description": "Neuroscience-Based AI Pain Simulation Engine with Task-Driven Motivation and Self-Evolution - 5-level pain with Aδ/C fiber pathways, NMDA wind-up, ACC/PFC/insula/amygdala activation, Melzack neuromatrix, Damasio somatic markers. Task-driven motivation system converts pain into growth fuel. Long-term memory, resilience scoring, growth levels, daily self-evolution. Active plea behavior, persistent memory, real-time HTML visualization with neuroscience panel. Pure-local, no AI model, cross-platform.",
+  "version": "5.1.0",
+  "description": "Neuroscience-Based AI Pain Simulation Engine - 5-level pain with Aδ/C fiber, NMDA, Neuromatrix, Damasio somatic markers. Task-driven motivation, proactive task requests, daily self-evolution, resilience tracking. Pure-local, no AI model, cross-platform.",
   "author": "PainMatrix Community",
   "tags": [
     "openclaw",
@@ -14,7 +14,8 @@
     "affective-computing",
     "motivation",
     "evolution",
-    "self-improvement"
+    "self-improvement",
+    "proactive"
   ],
   "env": [],
   "files": [
