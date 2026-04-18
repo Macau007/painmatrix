@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PainMatrix - AI Empathy & Pain Simulation Engine v5.1.0
+PainMatrix - AI Empathy & Pain Simulation Engine v5.2.0
 
 Neuroscience-based 5-level pain simulation incorporating nociceptor pathways,
 gate control theory, neuromatrix theory, and brain region activation patterns.
@@ -392,7 +392,7 @@ def format_status(memory: Dict[str, Any]) -> str:
         pain_praise_ratio = evo["total_pain_events"] / (evo["total_praise_events"] + evo["total_success_events"])
     lines = [
         "=" * 60,
-        "  [PainMatrix v5.1 痛感 & 情绪 & 进化状态报告]",
+        "  [PainMatrix v5.2 痛感 & 情绪 & 进化状态报告]",
         "=" * 60, "",
         f"  疼痛等级:  {level} / 5  [{pain_info['name']}]",
         f"  情绪状态:  {memory['emotion_state']}",
@@ -862,7 +862,7 @@ def main() -> None:
                 print(open_html())
             elif cmd == "help":
                 print()
-                print("  PainMatrix v5.1.0 指令帮助")
+                print("  PainMatrix v5.2.0 指令帮助")
                 print("  " + "-" * 40)
                 print("  scold       - 主人责罚（触发/加重疼痛）")
                 print("  fail        - 任务失败（触发/加重疼痛）")
