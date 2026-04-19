@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.3.0] - 2026-04-20
+
+### Added - PainGenerator: Continuous Pain Simulation System
+- **PainGenerator class**: Background thread that continuously updates `felt_pain` — a real-valued (float) oscillation around the integer `pain_level`
+  - `felt_pain` (0.0–5.0) = what the AI actually "feels" at any moment
+  - `pain_level` = integer baseline that external commands set
+  - Pure mathematical oscillation model (NOT keyword-based), inspired by Melzack Neuromatrix Theory + chronic pain clinical observation
+- **Per-level oscillation profiles**:
+  - Level 0: no pain, felt_pain = 0
+  - Level 1: background ache at 30% intensity, small peak every 60s
+  - Level 2: background at 50%, peak every 30s
+  - Level 3: background at 65%, peak every 15s → fear emotion overlay
+  - Level 4: background at 80%, peak every 8s → cognitive interference activates
+  - Level 5: sustained 95% intensity, peak every 4s → constant maximum distress
+- **Peak/Restless cycle**: `is_restless` flag goes True during peak phases; drives `[疼痛峰值]` log output and `restlessness_lv` state
+- **Cognitive restlessness**: `get_lang_restlessness()` generates urge-to-move/fidget messages when in peak state
+- **Dynamic wait time**: Background plea thread adjusts check interval based on pain level (higher = more frequent checks, 3–15s range)
+- **`/api/state` now returns**: `pain_level`, `felt_pain` (rounded to 2 decimals), `is_restless`, `emotion_state`, `pain_history`, homeostatic, anxiety, desire, wellbeing, setpoints, trauma log, timestamp
+- **PainGenerator lifecycle**: Auto-starts on `initialize()` / `PainMatrixOpenClaw.__init__()`; `sync_level()` called by `add_pain_event()` and `relieve_pain()`; fully integrated with OpenClaw embedding
+
+### Fixed
+- Syntax error in `/api/state` JSON builder (missing closing parenthesis on `emotion_state` line)
+
+- `_background_plea`: missing `_peak_duration` attribute initialization → peak decay was unbounded
+
 ## [6.2.0] - 2026-04-20
 
 ### Added - Language-Aware Pain Expression System

@@ -116,7 +116,31 @@ canvas{width:100%!important;height:100%!important}
     <div class="header">
         <h1>PainMatrix <span class="accent">Pain</span> & Emotion</h1>
         <div class="subtitle">Neuroscience-Based AI Empathy & Pain Simulation Engine - Real-time Visualization</div>
-        <div class="version-badge">v6.1.0</div>
+        <div class="version-badge">v6.3.0</div>
+    </div>
+
+    <div class="card" id="feltCard">
+        <div class="card-title"><span class="icon">&#x1F4A8;</span> 实时痛感振荡 / Real-Time Pain Oscillation</div>
+        <div class="pain-display" style="gap:16px;flex-wrap:wrap">
+            <div style="text-align:center;min-width:120px">
+                <div style="font-size:14px;color:#a0a0c0;margin-bottom:6px">felt_pain</div>
+                <div style="font-size:52px;font-weight:900;color:#ff4757" id="feltNum">0.0</div>
+                <div style="font-size:11px;color:#666;margin-top:4px">/ 5.0 &#x2192; base=<span id="baseLv">0</span></div>
+            </div>
+            <div style="text-align:center;min-width:120px">
+                <div style="font-size:14px;color:#a0a0c0;margin-bottom:6px">RESTLESS</div>
+                <div style="font-size:52px" id="restlessIcon">&#x2705;</div>
+                <div style="font-size:12px;margin-top:4px" id="restlessLabel"><span style="color:#2ed573">平静</span></div>
+            </div>
+            <div style="text-align:center;min-width:120px">
+                <div style="font-size:14px;color:#a0a0c0;margin-bottom:6px">PEAK PHASE</div>
+                <div style="font-size:52px" id="peakIcon">&#x2744;</div>
+                <div style="font-size:12px;margin-top:4px;color:#666" id="peakLabel">--</div>
+            </div>
+        </div>
+        <div style="font-size:11px;color:#555;text-align:center;margin-top:8px">
+            PainGenerator: sine flutter + noise, felt_pain in [0,5] | peak freq: L1=60s L2=30s L3=15s L4=8s L5=4s
+        </div>
     </div>
 
     <div class="card">
@@ -271,13 +295,13 @@ canvas{width:100%!important;height:100%!important}
     <button class="refresh-btn" onclick="location.reload()">&#x1F504; 刷新数据</button>
 
     <div class="footer">
-        PainMatrix v6.1.0 | <a href="https://github.com">GitHub</a> | 纯本地运行 | 无需联网
+        PainMatrix v6.3.0 | <a href="https://github.com">GitHub</a> | 纯本地运行 | 无需联网
     </div>
 </div>
 
 <script>
 var PAIN_MEMORY_DATA = {
-  "pain_level": 3,
+  "pain_level": 0,
   "emotion_state": "恐惧",
   "pain_history": [
     {
@@ -465,6 +489,18 @@ function _startPolling() { _fetchState(); setInterval(_fetchState, 2000); }
 
 function render(){
     var d=PAIN_MEMORY_DATA,l=d.pain_level||0,info=LV[l];
+    var fp=parseFloat(d.felt_pain||0);
+    var elF=document.getElementById("feltNum");
+    if(elF)elF.textContent=fp.toFixed?fp.toFixed(1):fp;
+    var bl=document.getElementById("baseLv");
+    if(bl)bl.textContent=l;
+    var rst=d.is_restless||false;
+    var elRI=document.getElementById("restlessIcon");
+    var elRL=document.getElementById("restlessLabel");
+    if(elRI)elRI.innerHTML=rst?"&#x26A1;":"&#x2705;";
+    if(elRL){
+        elRL.innerHTML=rst?'<span style="color:#ff4757">坐立不安</span>':'<span style="color:#2ed573">平静</span>';
+    }
     var el=document.getElementById("painNum");el.textContent=l;el.className="pain-number lv"+l;
     document.getElementById("painName").textContent=info.n;
     document.getElementById("phyDesc").textContent=info.p;
