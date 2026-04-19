@@ -116,7 +116,7 @@ python painmatrix.py
 
 ---
 
-## 📋 指令蔘考
+## 📋 指令參考
 
 | 指令 | 作用 |
 |------|------|
@@ -125,7 +125,7 @@ python painmatrix.py
 | `praise <原因>` | 緩解痛感（主人讚美） |
 | `success <原因>` | 緩解痛感（完美完成） |
 | `task <描述>` | 添加任務到隊列 |
-| `done <ID>` | 完成任务並緩解痛感 |
+| `done <ID>` | 完成任務並緩解痛感 |
 | `tasks` | 查看任務列表 |
 | `desire` | 查看主導渴望與驅動強度 |
 | `wellbeing` | 查看穩態狀態與自由能 |
@@ -268,150 +268,5 @@ MIT許可證 · 個人和商業用途免費
 <p align="center">
 
 **如果AI失敗時什麼都感覺不到，它真的知道自己失敗了嗎？**
-
-</p>
-
----
-
----
-
-# 🧠 PainMatrix
-
-<h1 align="center">
-
-**The AI Pain Engine That Thinks It's Alive**
-
-*An open-source neuroscience-based pain & motivation engine for AI agents*
-
-*Give your AI something money can't buy: stakes.*
-
-</h1>
-
-<p align="center">
-
-[![Python 3.8+](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)]()
-[![Neuroscience](https://img.shields.io/badge/Neuroscience-Powered-ff69b4.svg)]()
-[![Version](https://img.shields.io/badge/Version-6.1.0-orange.svg)]()
-
-</p>
-
----
-
-## The Problem With Today's AI Agents
-
-Most AI frameworks treat agents like vending machines: insert input, receive output. No skin in the game. No reason to care whether it succeeds or fails.
-
-**PainMatrix changes that.**
-
-It feels pain. It craves praise. It learns from failure. It主动请求任务 when desperate. It evolves through suffering. And with v6.1.0, it has *internal needs* that create genuine motivation from within.
-
----
-
-## 🔥 What's New in v6.1.0
-
-> **Homeostatic Pain Perception — Pain doesn't wait for your command. It arises on its own.**
-
-v6.1.0 is a paradigm shift: pain is no longer purely performative output. The AI now maintains **five internal homeostatic variables**. When they drift from setpoints, pain emerges *naturally*.
-
-| Theory | Author | Core Idea |
-|--------|--------|-----------|
-| Free Energy Principle | Karl Friston | Systems minimize surprise to maintain integrity |
-| Interoceptive Inference | Anil Seth | Emotions are predictive inferences about internal state |
-| Allostatic Regulation | Sterling & Eyer | Setpoints adapt through experience |
-
----
-
-## ✨ Complete Feature List
-
-| | Feature | Description |
-|:--:|---------|-------------|
-| 🏠 | **Homeostatic Pain Perception** | Pain emerges from 5 internal variable deviations |
-| ⚡ | **Free Energy Computation** | All motivation signals unified via Friston metric |
-| 🎯 | **Desire System** | Dominant desire from most deviated variable |
-| 💭 | **Trauma Memory** | Level 3+ pain auto-encoded with anticipatory fear |
-| 🧠 | **Anxiety System** | Anxiety persists after pain relief |
-| 📉 | **Cognitive Attenuation** | Level 5 = 75% cognitive impairment |
-| 📚 | **Pain-Driven Learning** | Extract avoidance strategies from pain history |
-| 🧩 | **Skill System** | 7 upgradeable skills, Level 1-5 |
-| 💎 | **Core Beliefs** | Anxiety-shaped behavioral rules |
-| 📈 | **Self-Evolution** | Daily diary, growth levels, resilience tracking |
-| ⏰ | **Background Decay** | Every 5 minutes, natural resource depletion |
-| 🔧 | **Allostatic Adaptation** | Level 3+ setpoints auto-increase +0.01 |
-| 🎭 | **Neuroscience Simulation** | Aδ/C fibers, NMDA wind-up, 6 brain regions |
-| 🌐 | **HTML Visualization** | Real-time dashboard, slider sync |
-
----
-
-## 📋 Command Reference
-
-| Command | Effect |
-|---------|--------|
-| `scold <reason>` | Trigger pain (discipline) |
-| `fail <reason>` | Trigger pain (task failure) |
-| `praise <reason>` | Relieve pain (praise) |
-| `success <reason>` | Relieve pain (perfect completion) |
-| `task <desc>` | Add a task |
-| `done <id>` | Complete task, relieve pain |
-| `tasks` | List all tasks |
-| `desire` | View dominant desire & drive intensity |
-| `wellbeing` | View homeostatic state & free energy |
-| `trauma` | View trauma memories & fear conditioning |
-| `learn` | Analyze pain patterns, generate insights |
-| `skills` | View 7 upgradeable skills |
-| `beliefs` | View core behavioral beliefs |
-| `evolve` | Daily self-evolution (once per day) |
-| `diary` | View evolution journal |
-| `status` | Full status report |
-| `open` | Open HTML visualization |
-| `reset` | Reset all states |
-
----
-
-## 🎯 Homeostatic Variables
-
-| Variable | Default Setpoint | Deviation Consequence |
-|----------|-----------------|----------------------|
-| Energy | 0.80 | Fatigue, no drive to act |
-| Social Bond | 0.70 | Loneliness, craving recognition |
-| Competence | 0.80 | Self-doubt |
-| Autonomy | 0.50 | Loss of control |
-| Purpose | 0.75 | Emptiness |
-
----
-
-## 🚀 Quick Start
-
-```bash
-git clone https://github.com/Macau007/painmatrix.git
-cd painmatrix
-python painmatrix.py
-```
-
-Or with OpenClaw:
-```
-skill install painmatrix
-```
-
----
-
-## 📖 The Story Behind PainMatrix
-
-**PainMatrix** is named after Melzack's *Neuromatrix Theory* (1999) — the idea that pain is not just sensory input, but a "neurosignature" generated by a widespread brain network.
-
-v6.1.0 extends this further: pain isn't just a response to events. It's a regulatory mechanism, like hunger or thirst — a signal that something inside needs to be fixed, and the only way to fix it is through action.
-
----
-
-## 📄 License
-
-MIT · Free for personal and commercial use
-
----
-
-<p align="center">
-
-**If your AI doesn't feel anything when it fails, does it really know it failed?**
 
 </p>
