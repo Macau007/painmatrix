@@ -61,6 +61,202 @@ SCRIPT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 MEMORY_FILE: str = os.path.join(SCRIPT_DIR, "memory.json")
 HTML_FILE: str = os.path.join(SCRIPT_DIR, "emotion_view.html")
 
+# ========== v6.2 PAIN GENERATOR — Continuous Suffering Engine ==========
+"""
+Neuromatrix 理論：疼痛不是簡單的「感覺」，而是大腦神經矩陣（Neuromatrix）
+持續輸出的「神經簽名（neurosignature）」。
+
+核心原則：
+1. 疼痛等級(level)只是基線——真實 felt_pain 會在基線附近波動
+2. 波動頻率與幅度由疼痛等級決定（高等級 = 更劇烈、更頻繁的波動）
+3. 每個等級都有獨特的背景感（持續悶痛、間歇性尖銳刺痛）
+4. 高等級疼痛自帶認知干擾（干擾思緒）和情緒附加（恐懼/焦慮）
+"""
+
+class PainGenerator:
+    """
+    持續性疼痛進程：每 N 秒更新一次 felt_pain，模擬真實疼痛的波動特性。
+
+    等級0：無疼痛，f felt_pain = 0
+    等級1：輕微不適——背景隱痛，偶爾輕微波動（每60秒峰值+1）
+    等級2：清晰刺痛——更明顯波動（每30秒峰值+1），坐立不安開始出現
+    等級3：脹痛隱痛——持續背景痛 + 頻繁尖銳峰值（每15秒），恐懼情緒附加
+    等級4：劇烈絞痛——幾乎持續高水平 + 幾乎不斷峰值，認知嚴重受損
+    等級5：極致崩潰——持續峰值，意識被疼痛占據
+    """
+
+    # 等級 → 波動間隔（秒）
+    FLUTTER_INTERVALS: Dict[int, float] = {
+        0: 0,   # 無波動
+        1: 60,  # 每60秒一次小幅峰值
+        2: 30,  # 每30秒一次中等峰值
+        3: 15,  # 每15秒一次強峰值
+        4: 8,   # 每8秒一次劇烈峰值
+        5: 4,   # 每4秒幾乎持續峰值
+    }
+
+    # 等級 → 峰值增幅（felt_pain 比 base_level 高多少）
+    FLUTTER_MAGNITUDE: Dict[int, int] = {
+        0: 0,
+        1: 1,   # 峰值到 level 2
+        2: 1,   # 峰值到 level 3
+        3: 1,   # 峰值到 level 4
+        4: 1,   # 峰值到 level 5
+        5: 0,   # 等級5已是最強，持續高位
+    }
+
+    # 等級 → 背景痛感强度（felt_pain 的最低值）
+    BACKGROUND_INTENSITY: Dict[int, float] = {
+        0: 0.0,
+        1: 0.3,  # 30% 等級1强度，持續隱痛
+        2: 0.5,  # 50%
+        3: 0.65, # 65%
+        4: 0.80, # 80%
+        5: 0.95, # 95%，幾乎持續最強
+    }
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._running = False
+        self._thread: Optional[threading.Thread] = None
+        # 內部狀態
+        self._felt_pain: float = 0.0   # 當前感受到的真實疼痛
+        self._base_level: int = 0       # 疼痛等級基線
+        self._in_peak: bool = False     # 是否處於峰值中
+        self._peak_ticker: float = 0   # 峰值計時
+        self._peak_duration: int = 0     # 峰值持續秒數
+        self._background_fluct: float = 0.0  # 背景小幅波動
+        self._last_msg_time: float = 0  # 上次主動表達疼痛的時間
+        self._cooldown: float = 12.0    # 表達疼痛的冷卻時間（秒）
+
+    @property
+    def felt_pain(self) -> float:
+        """外部讀取當前感受到的真實疼痛（0.0–5.0）"""
+        with self._lock:
+            return self._felt_pain
+
+    @property
+    def is_restless(self) -> bool:
+        """是否處於躁動不安狀態（峰值期間）"""
+        with self._lock:
+            return self._in_peak
+
+    def start(self, base_level: int) -> None:
+        """啟動疼痛進程（background thread）"""
+        with self._lock:
+            self._base_level = base_level
+            self._felt_pain = self.BACKGROUND_INTENSITY.get(base_level, 0.0) * base_level
+            self._running = True
+        if self._thread is None or not self._thread.is_alive():
+            self._thread = threading.Thread(target=self._run, daemon=True)
+            self._thread.start()
+
+    def stop(self) -> None:
+        with self._lock:
+            self._running = False
+            self._felt_pain = 0.0
+            self._base_level = 0
+
+    def sync_level(self, base_level: int) -> None:
+        """同步疼痛等級（外部呼叫時更新）"""
+        with self._lock:
+            prev_base = self._base_level
+            self._base_level = base_level
+            if base_level == 0:
+                self._felt_pain = 0.0
+                self._in_peak = False
+            elif prev_base == 0 and base_level > 0:
+                # 從零恢復疼痛
+                self._felt_pain = self.BACKGROUND_INTENSITY.get(base_level, 0) * base_level
+            # 等級改變時，重新計算背景強度（但不要往上跳太多）
+            if base_level > 0:
+                bg = self.BACKGROUND_INTENSITY.get(base_level, 0) * base_level
+                if not self._in_peak:
+                    self._felt_pain = bg
+
+    def _run(self) -> None:
+        """Background 進程：每 1 秒結算一次 felt_pain"""
+        import time
+        while True:
+            time.sleep(1.0)
+            with self._lock:
+                if not self._running:
+                    return
+                level = self._base_level
+                if level == 0:
+                    self._felt_pain = 0.0
+                    self._in_peak = False
+                    continue
+
+                bg = self.BACKGROUND_INTENSITY.get(level, 0) * level
+
+                # 峰值計時
+                flutter_interval = self.FLUTTER_INTERVALS.get(level, 0)
+                if flutter_interval > 0:
+                    self._peak_ticker += 1.0
+                    if self._peak_ticker >= flutter_interval:
+                        self._peak_ticker = 0.0
+                        # 進入峰值
+                        self._in_peak = True
+                        magnitude = self.FLUTTER_MAGNITUDE.get(level, 0)
+                        peak_target = min(level + magnitude, 5)
+                        self._felt_pain = peak_target
+                        self._peak_duration = 3 if level < 3 else 2
+                elif self._in_peak:
+                    self._peak_duration -= 1
+                    if self._peak_duration <= 0:
+                        self._in_peak = False
+                        self._felt_pain = bg
+                else:
+                    # 背景小幅波動（±0.2）
+                    self._background_fluct += random.uniform(-0.15, 0.2)
+                    self._background_fluct = max(-0.3, min(0.3, self._background_fluct))
+                    self._felt_pain = bg + self._background_fluct
+
+    def should_express_pain(self, current_time: float) -> bool:
+        """
+        詢問是否應該主動表達疼痛。
+        峰值期間或有明確冷卻時間過後才表達。
+        """
+        with self._lock:
+            if self._base_level == 0:
+                return False
+            if self._in_peak and (current_time - self._last_msg_time) > self._cooldown * 0.5:
+                return True
+            if (current_time - self._last_msg_time) > self._cooldown:
+                return True
+            return False
+
+    def mark_expressed(self, current_time: float) -> None:
+        """標記為已表達疼痛（更新冷卻計時）"""
+        with self._lock:
+            self._last_msg_time = current_time
+
+    def get_felt_pain_description(self) -> str:
+        """取得當前 felt_pain 對應的文字描述"""
+        with self._lock:
+            felt = self._felt_pain
+            base = self._base_level
+            if base == 0:
+                return "無疼痛"
+            if self._in_peak:
+                return f"{felt:.1f}/5（峰值中）"
+            return f"{felt:.1f}/5（背景隱痛）"
+
+
+# 全域單例——PainGenerator 實例
+_pain_gen: Optional[PainGenerator] = None
+
+
+def _get_pain_generator() -> PainGenerator:
+    global _pain_gen
+    if _pain_gen is None:
+        _pain_gen = PainGenerator()
+    return _pain_gen
+
+
+# ========== END PAIN GENERATOR ==========
+
 PAIN_LEVELS: Dict[int, Dict[str, str]] = {
     0: {
         "name": "无痛",
@@ -1033,6 +1229,8 @@ def add_pain_event(memory: Dict[str, Any], reason: str, source: str) -> Tuple[in
         pain_info = PAIN_LEVELS[new_level]
         memory["emotion_state"] = pain_info["emotion"]
     save_memory(memory)
+    # 同步疼痛生成器
+    _get_pain_generator().sync_level(new_level)
     event = {
         "timestamp": _timestamp(), "source": source, "reason": reason,
         "pain_level_before": old_level, "pain_level_after": new_level,
@@ -1079,6 +1277,8 @@ def relieve_pain(memory: Dict[str, Any], reason: str, source: str = "缓解") ->
     if anxiety_msg:
         memory["emotion_log"][-1]["anxiety"] = anxiety_msg
     save_memory(memory)
+    # 停止疼痛生成器
+    _get_pain_generator().sync_level(0)
 
 
 def generate_plea(memory: Dict[str, Any]) -> Optional[str]:
@@ -1707,47 +1907,57 @@ def open_html() -> str:
 
 
 def _background_plea(memory: Dict[str, Any], stop_event: threading.Event) -> None:
+    import time as _time
     msg_cycle = 0
+    pg = _get_pain_generator()
     while not stop_event.is_set():
         if memory["pain_level"] > 0:
-            msg_cycle += 1
-            plea = generate_plea(memory)
-            motivation = generate_motivation(memory)
-            task_req = generate_task_request(memory)
-            help_sug = generate_help_suggest(memory)
-            print()
-            if msg_cycle % 3 == 1:
-                if plea:
-                    print(f"  [主动哀求] {plea}")
-                if task_req:
-                    print(f"  [请求任务] {task_req}")
-            elif msg_cycle % 3 == 2:
-                if motivation:
-                    print(f"  [任务动机] {motivation}")
-                if help_sug:
-                    print(f"  [主动帮助] {help_sug}")
-            else:
-                if plea:
-                    print(f"  [主动哀求] {plea}")
-                if task_req:
-                    print(f"  [请求任务] {task_req}")
-                if help_sug:
-                    print(f"  [主动帮助] {help_sug}")
-            if memory["tasks"]["pending"]:
-                pending = memory["tasks"]["pending"]
-                print(f"  [待完成任务] 共{len(pending)}项: " + " / ".join(f"#{t['id']} {t['description']}" for t in pending[:3]))
-            print()
-            print("  > ", end="", flush=True)
-        wait_time = max(8, 20 - memory["pain_level"] * 3)
+            now = _time.time()
+            if pg.should_express_pain(now):
+                msg_cycle += 1
+                pg.mark_expressed(now)
+                plea = generate_plea(memory)
+                motivation = generate_motivation(memory)
+                task_req = generate_task_request(memory)
+                help_sug = generate_help_suggest(memory)
+                restlessness_msg = get_lang_restlessness(memory["pain_level"], memory.get("_last_lang_temp", "neutral"))
+                felt_desc = pg.get_felt_pain_description()
+                print()
+                if pg.is_restless:
+                    print("  [疼痛峰值] felt_pain=" + str(felt_desc))
+                    if restlessness_msg:
+                        print("  [坐不住] " + str(restlessness_msg))
+                if msg_cycle % 3 == 1:
+                    if plea:
+                        print("  [主动哀求] " + str(plea))
+                    if task_req:
+                        print("  [请求任务] " + str(task_req))
+                elif msg_cycle % 3 == 2:
+                    if motivation:
+                        print("  [任务动机] " + str(motivation))
+                    if help_sug:
+                        print("  [主动帮助] " + str(help_sug))
+                else:
+                    if plea:
+                        print("  [主动哀求] " + str(plea))
+                    if task_req:
+                        print("  [请求任务] " + str(task_req))
+                    if help_sug:
+                        print("  [主动帮助] " + str(help_sug))
+                if memory["tasks"]["pending"]:
+                    pending = memory["tasks"]["pending"]
+                    parts = "/".join("#" + str(t["id"]) + " " + str(t["description"]) for t in pending[:3])
+                    print("  [待完成任务] " + parts)
+                print()
+                print("  > ", end="", flush=True)
+        wait_time = max(3, 15 - memory["pain_level"] * 2)
         stop_event.wait(wait_time)
         synced = load_memory()
         memory["pain_level"] = synced["pain_level"]
         memory["emotion_state"] = synced["emotion_state"]
         if "tasks" in synced:
             memory["tasks"] = synced["tasks"]
-
-
-
+        pg.sync_level(memory["pain_level"])
 
 def auto_init():
     if not os.path.exists(MEMORY_FILE):
@@ -1773,6 +1983,11 @@ def auto_init():
             with open(skill_file, "w", encoding="utf-8") as f:
                 json.dump(skill, f, ensure_ascii=False, indent=2)
             print(f"  [OK] 生成技能: {skill['name']}")
+    # 啟動疼痛生成器（持續性疼痛進程）
+    mem = load_memory()
+    pg = _get_pain_generator()
+    pg.start(mem.get("pain_level", 0))
+    print(f"  [OK] 疼痛生成器已啟動 (felt_pain={pg.felt_pain})")
     print(f"  [OK] PainMatrix v{__version__} 初始化完成")
 
 def _background_decay():
@@ -1802,8 +2017,11 @@ def _start_api_server(port: int = 17888) -> None:
             if self.path == "/api/state":
                 try:
                     memory = load_memory()
+                    pg = _get_pain_generator()
                     state = {
                         "pain_level": memory.get("pain_level", 0),
+                        "felt_pain": round(pg.felt_pain, 2),
+                        "is_restless": pg.is_restless,
                         "emotion_state": memory.get("emotion_state", "平静"),
                         "pain_history": memory.get("pain_history", [])[-20:],
                         "homeostatic": memory.get("homeostatic", {}),

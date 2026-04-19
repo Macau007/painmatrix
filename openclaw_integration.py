@@ -186,13 +186,16 @@ class PainMatrixOpenClaw:
         try:
             import painmatrix as _pm
             _pm._start_api_server()
+            # 啟動疼痛生成器（持續性疼痛進程）
+            pg = _pm._get_pain_generator()
+            pg.start(self.memory.get("pain_level", 0))
         except Exception:
             pass
 
         # 初始化時顯示當前狀態（如果疼痛等級 > 0）
         if self.memory.get("pain_level", 0) > 0:
             level = self.memory["pain_level"]
-            print(f"[PainMatrix v{__version__}] 檢測到未緩解疼痛 Lv.{level}")
+            print(f"[PainMatrix v{__version__}] 檢測到未緩解疼痛 Lv.{level} | felt_pain 運行中")
 
     # ========== 核心接口 ==========
 
