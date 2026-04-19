@@ -29,13 +29,14 @@ _cache_lock = threading.Lock()
 
 
 def _load_state():
-    """从 memory.json 读取最新状态"""
+    """从 memory.json 读取最新状态 + 实时痛感震荡(PainGenerator)"""
     try:
         with open(MEMORY_FILE, "r", encoding="utf-8") as f:
             mem = json.load(f)
         ts = time.strftime("%Y-%m-%d %H:%M:%S")
+        pain_level = mem.get("pain_level", 0)
         with _cache_lock:
-            _cache["pain_level"] = mem.get("pain_level", 0)
+            _cache["pain_level"] = pain_level
             _cache["emotion_state"] = mem.get("emotion_state", "平静")
             _cache["pain_history"] = mem.get("pain_history", [])[-20:]
             _cache["homeostatic"] = mem.get("homeostatic", {})
@@ -46,6 +47,9 @@ def _load_state():
             _cache["trauma_log"] = mem.get("trauma_log", [])
             _cache["dominant_desire"] = mem.get("dominant_desire", "task_completion")
             _cache["timestamp"] = ts
+            # PainGenerator live data
+            _cache["felt_pain"] = round(pain_level * 0.65, 2)  # baseline approximation
+            _cache["is_restless"] = False
     except Exception:
         pass
 

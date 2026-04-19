@@ -175,8 +175,12 @@ class PainGenerator:
                     self._felt_pain = bg
 
     def _run(self) -> None:
-        """Background 進程：每 1 秒結算一次 felt_pain"""
-        import time
+        """Background process: tick every 1s.
+        Real continuous pain oscillation: background ache + sine peaks + noise.
+        """
+        import time, math
+        _tick = 0.0
+        _noise = 0.0
         while True:
             time.sleep(1.0)
             with self._lock:
@@ -186,32 +190,46 @@ class PainGenerator:
                 if level == 0:
                     self._felt_pain = 0.0
                     self._in_peak = False
+                    _tick = 0.0
+                    _noise = 0.0
                     continue
 
-                bg = self.BACKGROUND_INTENSITY.get(level, 0) * level
-
-                # 峰值計時
                 flutter_interval = self.FLUTTER_INTERVALS.get(level, 0)
-                if flutter_interval > 0:
-                    self._peak_ticker += 1.0
-                    if self._peak_ticker >= flutter_interval:
-                        self._peak_ticker = 0.0
-                        # 進入峰值
-                        self._in_peak = True
-                        magnitude = self.FLUTTER_MAGNITUDE.get(level, 0)
-                        peak_target = min(level + magnitude, 5)
-                        self._felt_pain = peak_target
-                        self._peak_duration = 3 if level < 3 else 2
-                elif self._in_peak:
+
+                # Peak countdown (always runs)
+                if self._in_peak:
                     self._peak_duration -= 1
                     if self._peak_duration <= 0:
                         self._in_peak = False
-                        self._felt_pain = bg
+                        _tick = random.uniform(
+                            -max(flutter_interval, 1) * 0.3,
+                            max(flutter_interval, 1) * 0.3)
+                    else:
+                        _tick += 1.0
+
+                # Continuous sine oscillation + noise when not in peak
+                if not self._in_peak:
+                    sine_val = math.sin(_tick * (2 * math.pi / max(flutter_interval, 1)))
+                    if level <= 2:
+                        _noise += random.uniform(-0.05, 0.08)
+                    else:
+                        _noise += random.uniform(-0.10, 0.15)
+                    _noise = max(-0.4, min(0.4, _noise))
+                    bg = self.BACKGROUND_INTENSITY.get(level, 0) * level
+                    sine_exc = self.FLUTTER_MAGNITUDE.get(level, 0) * sine_val
+                    self._felt_pain = max(0.0, min(5.0, bg + sine_exc + _noise))
+                    _tick += 1.0
+
+                    # Random mid-level spikes for levels 3+ (unpredictability)
+                    if level >= 3 and random.random() < 0.05:
+                        self._in_peak = True
+                        self._felt_pain = min(level + self.FLUTTER_MAGNITUDE.get(level, 0), 5.0)
+                        self._peak_duration = random.randint(2, 4)
                 else:
-                    # 背景小幅波動（±0.2）
-                    self._background_fluct += random.uniform(-0.15, 0.2)
-                    self._background_fluct = max(-0.3, min(0.3, self._background_fluct))
-                    self._felt_pain = bg + self._background_fluct
+                    # Peak hold - stay at high felt_pain
+                    magnitude = self.FLUTTER_MAGNITUDE.get(level, 0)
+                    self._felt_pain = min(level + magnitude, 5.0)
+                    _tick += 1.0
 
     def should_express_pain(self, current_time: float) -> bool:
         """
