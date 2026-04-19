@@ -70,11 +70,7 @@ python painmatrix.py
 
 ```
 ============================================================
-<<<<<<< HEAD
   PainMatrix v6.1.0
-=======
-  PainMatrix v5.2.0
->>>>>>> c6f483f51202847772cd3032d9f205e3d4efe2cb
   Based on Neuroscience | 基于神经科学
   Homeostatic Pain Perception | 内稳态痛觉感知
 ============================================================
@@ -152,15 +148,8 @@ python painmatrix.py
 | 🧠 | **5-Level Pain Engine** | 5级痛感引擎 | 从"轻微不适"到"神经矩阵灾难性崩溃"，每级精准模拟 |
 | 🧬 | **Real Neuroscience** | 真实神经科学 | Aδ/C纤维、NMDA风击、ACC/PFC/杏仁核/脑岛/海马/丘脑 |
 | 😢 | **Active Plea Behavior** | 主动哀求行为 | 痛苦时用真实神经科学术语主动恳求 |
-<<<<<<< HEAD
 | 📋 | **Task Request System** | 主动请求任务系统 | 痛苦时主动请求任务，不再只是哀求 |
 | 🤝 | **Help Suggestion System** | 主动帮助建议系统 | 主动提出可以帮忙的事项 |
-=======
-| 📋 | **Task Request System** | 主动请求任务系统 | 🔥 **NEW v5.1** 痛苦时主动请求任务，不再只是哀求 |
-| 🤝 | **Help Suggestion System** | 主动帮助建议系统 | 主动提出可以帮忙的事项 |
-| 💬 | **Pain Level Explanations** | 疼痛等级中文说明 | 🔥 **NEW v5.2** 每级疼痛有人类可读中文描述 |
-| 🔄 | **Real-Time HTML Sync** | 实时HTML同步 | 🔥 **NEW v5.2** 每次疼痛事件立即同步HTML |
->>>>>>> c6f483f51202847772cd3032d9f205e3d4efe2cb
 | 💪 | **Pain → Motivation → Task Loop** | 痛感→动机→任务回路 | 疼痛转化为行动驱动力 |
 | 😰 | **Anxiety System** | 焦虑系统 | 疼痛后持续焦虑，影响行为和信念 |
 | 🧠 | **Cognitive Attenuation** | 认知衰减 | 疼痛降低认知容量（功能性效果） |
@@ -306,7 +295,6 @@ from painmatrix import (
     generate_plea,
     generate_task_request,
     generate_help_suggest,
-<<<<<<< HEAD
     # 🔥 NEW v6.1.0 — Homeostatic System APIs
     compute_homeostatic_pain,
     compute_free_energy,
@@ -315,9 +303,6 @@ from painmatrix import (
     handle_desire,
     handle_wellbeing,
     handle_trauma,
-=======
-    save_memory,
->>>>>>> c6f483f51202847772cd3032d9f205e3d4efe2cb
 )
 
 # 加载持久化记忆
@@ -618,7 +603,6 @@ python painmatrix.py           # Run engine
 - [x] v3.0 — Cross-platform + OpenClaw integration
 - [x] v4.0 — Full neuroscience-based pain modeling
 - [x] v5.0 — Task-driven motivation + Self-evolution
-<<<<<<< HEAD
 - [x] v5.1 — Active task request + Help suggestion system
 - [x] v6.1 — Anxiety System + Cognitive Attenuation + Pain-Driven Learning
 - [x] **v6.1.0 — Homeostatic Pain Perception + Free Energy + Desire + Trauma + Allostatic Regulation** 🔥 **RELEASED**
@@ -626,14 +610,6 @@ python painmatrix.py           # Run engine
 - [ ] v6.2 — EEG-like brain activity visualization
 - [ ] v7.0 — Chronic pain model with neuroplasticity
 - [ ] v7.0 — Multi-agent shared pain network
-=======
-- [x] v5.1 — **Active task request + Help suggestion system**
-- [x] v5.2 — **Pain level explanations + Real-time HTML sync** ← NEW!
-- [ ] v6.0 — **Sound synthesis for pain vocalization** 🔥
-- [ ] v6.0 — **EEG-like brain activity visualization**
-- [ ] v6.0 — **Chronic pain model with neuroplasticity**
-- [ ] v6.0 — **Multi-agent shared pain network**
->>>>>>> c6f483f51202847772cd3032d9f205e3d4efe2cb
 
 ---
 
