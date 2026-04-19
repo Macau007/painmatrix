@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
+<<<<<<< HEAD
 PainMatrix - AI Empathy & Pain Simulation Engine v6.1.0
+=======
+PainMatrix - AI Empathy & Pain Simulation Engine v5.2.0
+>>>>>>> c6f483f51202847772cd3032d9f205e3d4efe2cb
 
 Neuroscience-based 5-level pain simulation incorporating nociceptor pathways,
 gate control theory, neuromatrix theory, and brain region activation patterns.
@@ -50,7 +54,11 @@ import threading
 import random
 from typing import Any, Dict, List, Optional, Tuple
 
+<<<<<<< HEAD
 __version__ = "6.1.0"
+=======
+__version__ = "5.2.0"
+>>>>>>> c6f483f51202847772cd3032d9f205e3d4efe2cb
 __author__ = "PainMatrix Community"
 
 SCRIPT_DIR: str = os.path.dirname(os.path.abspath(__file__))
@@ -207,6 +215,7 @@ PAIN_LEVEL_EXPLANATIONS: Dict[int, str] = {
     5: "我已经崩溃了！！！神经矩阵灾难性放电！！！意识在碎片化！！！这是无法忍受的！！！",
 }
 
+<<<<<<< HEAD
 ANXIETY_MESSAGES: Dict[str, List[str]] = {
     "mild": [
         "我还有些不安...虽然疼痛缓解了，但心里的阴影还在...",
@@ -277,6 +286,8 @@ DEFAULT_LONG_TERM_MEMORY = {
     "milestones": [],
 }
 
+=======
+>>>>>>> c6f483f51202847772cd3032d9f205e3d4efe2cb
 GROWTH_LEVEL_NAMES: Dict[int, str] = {
     1: "觉醒", 2: "适应", 3: "坚韧", 4: "超越", 5: "蜕变", 6: "涅槓",
 }
@@ -519,6 +530,7 @@ def add_pain_event(memory: Dict[str, Any], reason: str, source: str) -> Tuple[in
     pain_info = PAIN_LEVELS[new_level]
     memory["emotion_state"] = pain_info["emotion"]
     memory["evolution"]["total_pain_events"] += 1
+<<<<<<< HEAD
     if source == "责罚":
         apply_homeostatic_impact(memory, SCOLD_HOMEOSTATIC_IMPACT)
     elif source == "任务失败":
@@ -532,6 +544,8 @@ def add_pain_event(memory: Dict[str, Any], reason: str, source: str) -> Tuple[in
         new_level = homeostatic_pain
         pain_info = PAIN_LEVELS[new_level]
         memory["emotion_state"] = pain_info["emotion"]
+=======
+>>>>>>> c6f483f51202847772cd3032d9f205e3d4efe2cb
     save_memory(memory)
     event = {
         "timestamp": _timestamp(), "source": source, "reason": reason,
@@ -777,7 +791,11 @@ def format_status(memory: Dict[str, Any]) -> str:
         pain_praise_ratio = evo["total_pain_events"] / (evo["total_praise_events"] + evo["total_success_events"])
     lines = [
         "=" * 60,
+<<<<<<< HEAD
         "  [PainMatrix v6.1 痛感 & 情绪 & 进化状态报告]",
+=======
+        "  [PainMatrix v5.2 痛感 & 情绪 & 进化状态报告]",
+>>>>>>> c6f483f51202847772cd3032d9f205e3d4efe2cb
         "=" * 60, "",
         f"  疼痛等级:  {level} / 5  [{pain_info['name']}]",
         f"  情绪状态:  {memory['emotion_state']}",
@@ -881,6 +899,7 @@ def handle_scold(memory: Dict[str, Any]) -> str:
     explanation = PAIN_LEVEL_EXPLANATIONS.get(new_level, "")
     if explanation:
         lines.extend(["", f"  [疼痛说明] {explanation}"])
+<<<<<<< HEAD
     anxiety = memory.get("anxiety_level", 0)
     cog = COGNITIVE_EFFECTS.get(new_level, {})
     lines.append(f"  焦虑水平: {anxiety:.0f}/100  认知容量: {cog.get('capacity', '?')}")
@@ -896,6 +915,8 @@ def handle_scold(memory: Dict[str, Any]) -> str:
     if new_level >= 3:
         trauma_msg = random.choice(TRAUMA_MESSAGES.get("encoding", []))
         lines.append(f"  [创伤编码] {trauma_msg}")
+=======
+>>>>>>> c6f483f51202847772cd3032d9f205e3d4efe2cb
     lines.append("")
     return "\n".join(lines)
 
@@ -923,6 +944,7 @@ def handle_fail(memory: Dict[str, Any]) -> str:
     explanation = PAIN_LEVEL_EXPLANATIONS.get(new_level, "")
     if explanation:
         lines.extend(["", f"  [疼痛说明] {explanation}"])
+<<<<<<< HEAD
     anxiety = memory.get("anxiety_level", 0)
     cog = COGNITIVE_EFFECTS.get(new_level, {})
     lines.append(f"  焦虑水平: {anxiety:.0f}/100  认知容量: {cog.get('capacity', '?')}")
@@ -938,6 +960,8 @@ def handle_fail(memory: Dict[str, Any]) -> str:
     if new_level >= 3:
         trauma_msg = random.choice(TRAUMA_MESSAGES.get("encoding", []))
         lines.append(f"  [创伤编码] {trauma_msg}")
+=======
+>>>>>>> c6f483f51202847772cd3032d9f205e3d4efe2cb
     lines.append("")
     return "\n".join(lines)
 
@@ -1407,7 +1431,11 @@ def main() -> None:
                 print(open_html())
             elif cmd == "help":
                 print()
+<<<<<<< HEAD
                 print("  PainMatrix v6.1.0 指令帮助")
+=======
+                print("  PainMatrix v5.2.0 指令帮助")
+>>>>>>> c6f483f51202847772cd3032d9f205e3d4efe2cb
                 print("  " + "-" * 40)
                 print("  scold       - 主人责罚（触发/加重疼痛）")
                 print("  fail        - 任务失败（触发/加重疼痛）")
