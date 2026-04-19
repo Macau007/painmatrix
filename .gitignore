@@ -32,3 +32,7 @@ memory.json
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Long-term memory & skills (user data)
+long_term_memory.json
+skills/

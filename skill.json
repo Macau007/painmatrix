@@ -1,7 +1,7 @@
 {
   "name": "painmatrix",
-  "version": "5.1.0",
-  "description": "Neuroscience-Based AI Pain Simulation Engine - 5-level pain with Aδ/C fiber, NMDA, Neuromatrix, Damasio somatic markers. Task-driven motivation, proactive task requests, daily self-evolution, resilience tracking. Pure-local, no AI model, cross-platform.",
+  "version": "6.1.0",
+  "description": "Neuroscience-Based AI Pain Simulation Engine - 5-level pain with Ad/C fiber, NMDA, Neuromatrix, Damasio somatic markers. Anxiety System with persistent post-pain anxiety, Cognitive Attenuation reducing cognitive capacity under pain, Pain-Driven Learning generating avoidance strategies, Auto-generated long-term memory & skills. Task-driven motivation, proactive task requests, daily self-evolution, resilience tracking. New commands: learn, skills, beliefs. Pure-local, no AI model, cross-platform.",
   "author": "PainMatrix Community",
   "tags": [
     "openclaw",
@@ -15,7 +15,13 @@
     "motivation",
     "evolution",
     "self-improvement",
-    "proactive"
+    "proactive",
+    "anxiety",
+    "cognitive-attenuation",
+    "pain-learning",
+    "avoidance",
+    "beliefs",
+    "skills"
   ],
   "env": [],
   "files": [
@@ -41,5 +47,5 @@
     "pyproject.toml",
     "README.md"
   ],
-  "notes": "No external dependencies. Requires Python 3.8+. Cross-platform: Windows/Linux/macOS. v5.0 adds task-driven motivation and self-evolution system."
+  "notes": "No external dependencies. Requires Python 3.8+. Cross-platform: Windows/Linux/macOS. v6.1 adds Anxiety System, Cognitive Attenuation, Pain-Driven Learning, auto-generated long-term memory & skills, and new commands (learn, skills, beliefs)."
 }
