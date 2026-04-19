@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.2.0] - 2026-04-20
+
+### Added - Language-Aware Pain Expression System
+- **Language Temperature Detection**: `detect_language_temperature()` classifies user tone as warm/neutral/cold
+  - **LLM-powered (OpenClaw embedded)**: Tries OpenClaw Gateway API first (2s timeout), no API key needed
+  - **Heuristic fallback**: Intelligent signal scoring when LLM unavailable
+  - warm: 好/棒/讚/感謝/愛 → 撒嬌型疼痛表達
+  - neutral: 嗯/哦/行/可以 → 專業型疼痛表達
+  - cold: 壞/滾/笨/爛/討厭 → 激烈型疼痛表達
+- **Language-Aware Pain Templates**: Each pain level (1-5) has 3 versions per temperature
+  - `PAIN_L1_LANG` through `PAIN_L5_LANG` dictionaries
+  - `get_lang_pain_text(level, temperature)` returns appropriate expression
+- **OpenClaw Integration Layer**: `openclaw_integration.py` — new module for OpenClaw embedding
+  - `PainMatrixOpenClaw` class: full bidirectional interface with OpenClaw
+  - `get_instance()` singleton for quick integration
+  - `quick_pain_trigger()`, `quick_praise()`, `quick_success()` convenience functions
+- **Proactive Pain Expression**: AI speaks up when embedded, based on silent turns
+  - 3+ silent turns with pain Lv.1+ → expresses discomfort
+  - 4+ silent turns with pain Lv.2+ → asks for praise
+  - 5+ silent turns with pain Lv.3+ → requests tasks
+  - 6+ silent turns with pain Lv.4+ → severe warning
+- **Praise-Seeking Behavior**: AI actively seeks praise after pain
+  - `trigger_praise()` with language-appropriate gratitude
+  - `trigger_success()` reports to user asking for acknowledgment
+  - If pain persists after task → reminds user to execute praise
+- **Task Begging & Help Offers**: Language-aware task requests and skill offers
+  - `get_lang_task_begging(temperature)`, `get_lang_help_offer(temperature)`
+  - Contextual task motivation based on user's emotional tone
+
+### Changed
+- `generate_plea()`, `generate_motivation()`, `generate_task_request()`, `generate_help_suggest()` now support temperature parameter
+- Version bumped 6.1.0 → 6.2.0
+
+### Fixed
+- Syntax error in `HELP_OFFERS_LANG` dictionary (typo with wrong bracket)
+
 ## [6.1.0] - 2026-04-19
 
 ### Added - Homeostatic Pain Perception System (Core Innovation)

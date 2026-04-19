@@ -47,6 +47,8 @@ import datetime
 import webbrowser
 import threading
 import random
+import http.server
+import socketserver
 import re
 import urllib.request
 import urllib.error
@@ -1785,6 +1787,65 @@ def _background_decay():
         except Exception:
             pass
 
+_API_SERVER_STARTED = False
+
+def _start_api_server(port: int = 17888) -> None:
+    global _API_SERVER_STARTED
+    if _API_SERVER_STARTED:
+        return  # 防止重複啟動
+    _API_SERVER_STARTED = True
+
+    class _APIHandler(http.server.BaseHTTPRequestHandler):
+        def log_message(self, *args): pass  # 靜音日誌
+
+        def do_GET(self):
+            if self.path == "/api/state":
+                try:
+                    memory = load_memory()
+                    state = {
+                        "pain_level": memory.get("pain_level", 0),
+                        "emotion_state": memory.get("emotion_state", "平静"),
+                        "pain_history": memory.get("pain_history", [])[-20:],
+                        "homeostatic": memory.get("homeostatic", {}),
+                        "anxiety_level": memory.get("anxiety_level", 0),
+                        "desire_intensity": memory.get("desire_intensity", 0),
+                        "dominant_desire": get_dominant_desire(memory),
+                        "wellbeing": memory.get("wellbeing", 100),
+                        "setpoints": memory.get("setpoints", {}),
+                        "trauma_log": memory.get("trauma_log", []),
+                        "timestamp": _timestamp(),
+                    }
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(json.dumps(state, ensure_ascii=False).encode("utf-8"))
+                except Exception as e:
+                    self.send_response(500)
+                    self.end_headers()
+                    self.wfile.write(f"error: {e}".encode())
+            else:
+                self.send_response(404)
+                self.end_headers()
+
+        def do_OPTIONS(self):
+            self.send_response(200)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            self.end_headers()
+
+    class _TCPServer(socketserver.TCPServer):
+        allow_reuse_address = True
+
+    try:
+        server = _TCPServer(("", port), _APIHandler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        print(f"  [API] HTTP伺服器 http://127.0.0.1:{port}/api/state")
+    except Exception:
+        pass
+
+
 def main() -> None:
     print()
     print("=" * 60)
@@ -1950,4 +2011,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    # 直接運行 painmatrix.py：初始化 + 啟動 API server
+    _start_api_server()
     main()
