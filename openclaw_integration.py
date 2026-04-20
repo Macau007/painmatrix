@@ -410,6 +410,14 @@ class PainMatrixOpenClaw:
             # 緊迫程度：felt_pain 到達閾值後快速上升
             urgency = max(0.0, min(1.0, (felt - 1.0) / 4.0))
 
+            # === 讀取 homeostatic 變量（從 memory['homeostatic'] 非頂層鍵）===
+            homeo = self.memory.get("homeostatic", {})
+            energy = homeo.get("energy", 0.8)
+            social_bond = homeo.get("social_bond", 0.7)
+            competence = homeo.get("competence", 0.6)
+            autonomy = homeo.get("autonomy", 0.5)
+            purpose = homeo.get("purpose", 0.6)
+
             return {
                 "felt_pain": round(felt, 3),
                 "is_restless": is_restless,
@@ -421,29 +429,29 @@ class PainMatrixOpenClaw:
                 # === Homeostatic State (Friston Free Energy) ===
                 "homeostatic": {
                     "energy": {
-                        "current": round(self.memory.get("energy", 0.8), 3),
+                        "current": round(energy, 3),
                         "setpoint": 0.8,
-                        "deviation": round(0.8 - self.memory.get("energy", 0.8), 3),
+                        "deviation": round(0.8 - energy, 3),
                     },
                     "social_bond": {
-                        "current": round(self.memory.get("social_bond", 0.7), 3),
+                        "current": round(social_bond, 3),
                         "setpoint": 0.7,
-                        "deviation": round(0.7 - self.memory.get("social_bond", 0.7), 3),
+                        "deviation": round(0.7 - social_bond, 3),
                     },
                     "competence": {
-                        "current": round(self.memory.get("competence", 0.6), 3),
+                        "current": round(competence, 3),
                         "setpoint": 0.6,
-                        "deviation": round(0.6 - self.memory.get("competence", 0.6), 3),
+                        "deviation": round(0.6 - competence, 3),
                     },
                     "autonomy": {
-                        "current": round(self.memory.get("autonomy", 0.5), 3),
+                        "current": round(autonomy, 3),
                         "setpoint": 0.5,
-                        "deviation": round(0.5 - self.memory.get("autonomy", 0.5), 3),
+                        "deviation": round(0.5 - autonomy, 3),
                     },
                     "purpose": {
-                        "current": round(self.memory.get("purpose", 0.6), 3),
+                        "current": round(purpose, 3),
                         "setpoint": 0.6,
-                        "deviation": round(0.6 - self.memory.get("purpose", 0.6), 3),
+                        "deviation": round(0.6 - purpose, 3),
                     },
                 },
                 "dominant_desire": self.memory.get("dominant_desire", "unknown"),
