@@ -72,8 +72,8 @@ class S(socketserver.TCPServer):
     allow_reuse_address = True
 
 if __name__ == "__main__":
-    from painmatrix import PainGenerator
-    _pg = PainGenerator()
+    from painmatrix import _get_pain_generator
+    _pg = _get_pain_generator()
     with open(MEMORY_FILE, "r", encoding="utf-8") as f:
         _pl = json.load(f).get("pain_level", 0)
     _pg.start(_pl)
