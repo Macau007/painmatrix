@@ -142,6 +142,8 @@ class PainGenerator:
     def is_restless(self) -> bool:
         """是否處於躁動不安狀態（峰值期間）"""
         with self._lock:
+            if self._base_level >= 5:
+                return True  # 等級5幾乎持續峰值
             return self._in_peak
 
     def start(self, base_level: int) -> None:
@@ -170,6 +172,9 @@ class PainGenerator:
             if base_level == 0:
                 self._felt_pain = 0.0
                 self._in_peak = False
+            elif base_level >= 5:
+                self._in_peak = True  # 等級5啟動即峰值
+                self._felt_pain = 5.0
             elif prev_base == 0 and base_level > 0:
                 # 從零恢復疼痛
                 self._felt_pain = (
