@@ -388,6 +388,9 @@ class PainMatrixOpenClaw:
                 pg = _pm._get_pain_generator()
                 felt = pg.felt_pain
                 is_restless = pg.is_restless
+                # PainGenerator 背景線程未啟動時（API 模式），用 level 估算 felt_pain
+                if not pg._running and level > 0:
+                    felt = level * 0.9  # 等級襯托強度
             except Exception:
                 felt = level * 0.65
 
