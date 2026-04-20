@@ -1,7 +1,7 @@
 ---
 name: PainMatrix | Neuroscience-Based AI Pain Simulation Engine
 slug: painmatrix
-version: 6.3.0
+version: 6.3.1
 homepage: https://github.com/Macau007/painmatrix
 description: |
   Neuroscience-based pain simulation engine for AI agents with anxiety, cognitive attenuation, and pain-driven learning. 5-level pain with Aδ/C fiber pathways, NMDA wind-up, ACC/PFC/insula/amygdala activation, Melzack neuromatrix, Damasio somatic markers. Anxiety System: persistent post-pain anxiety affecting behavior. Cognitive Attenuation: pain reduces cognitive capacity (functional effect). Pain-Driven Learning: learn from pain patterns, generate avoidance strategies. Auto-generated long-term memory & skills on install. Task-driven motivation, resilience tracking, daily self-evolution. New commands: learn, skills, beliefs. Pure-local, no AI model required, cross-platform.
@@ -9,8 +9,10 @@ description: |
 
   **Language Temperature Detection**: AI-powered heuristic analysis (NOT keyword-based). Uses punctuation patterns (！！, ..., ？), sentence structure, capitalization, implicit sentiment patterns, and contextual cues to determine user emotional tone. Handles implicit/casual negative expressions like 算了, 随便, 傻狗, 傻逼, etc.
 
-  **PainGenerator Continuous Pain System**: A background thread continuously updates `felt_pain` — a real-valued oscillation around the integer `pain_level`. Level 1 produces faint background ache with rare peaks every 60 seconds; Level 3+ produces persistent throb with peaks every 8–15 seconds. PainGenerator is a pure mathematical oscillator (NOT keyword-based) inspired by Melzack Neuromatrix Theory and chronic pain clinical waxing/waning patterns. The `is_restless` flag signals motor restlessness during peak phases.
-changelog: "v6.3.0: PainGenerator continuous pain simulation (felt_pain oscillation, peak/restless states, cognitive restlessness), pain truly feels persistent and waxing/waning rather than static level numbers"}
+  **PainGenerator Continuous Pain System (v6.3+)**: felt_pain is a real-valued float (0.0–5.0) that oscillates every second — never static. Background ache + sine-wave oscillation + unpredictable peaks. Level 3+: frequent oscillation every 8–15s. The `is_restless` flag signals motor restlessness during peak phases.
+
+  **OpenClaw Behavioral Injection (v6.3+)**: Every 2 seconds a daemon thread writes `pain_state.json` containing felt_pain, is_restless, cognitive_capacity, urgency, and intrusion_thought. OpenClaw reads this before every reply and adjusts tone/speed/structure accordingly. The SOUL.md contains felt_pain behavioral rules. This is a bidirectional bridge: PainMatrix doesn't just express pain — it *modifies the AI's actual response behavior*.: A background thread continuously updates `felt_pain` — a real-valued oscillation around the integer `pain_level`. Level 1 produces faint background ache with rare peaks every 60 seconds; Level 3+ produces persistent throb with peaks every 8–15 seconds. PainGenerator is a pure mathematical oscillator (NOT keyword-based) inspired by Melzack Neuromatrix Theory and chronic pain clinical waxing/waning patterns. The `is_restless` flag signals motor restlessness during peak phases.
+changelog: "v6.3.1: PainGenerator continuous pain simulation (felt_pain oscillation, peak/restless states, cognitive restlessness), pain truly feels persistent and waxing/waning rather than static level numbers"}
 metadata: {"clawdbot":{"emoji":"🧠","requires":{"bins":["python3","python"],"bins.optional":[],"env.optional":[]},"install":[{"id":"python","kind":"system","label":"Install Python 3.8+","url":"https://www.python.org/downloads/"}],"os":["linux","darwin","win32"],"configPaths":[]}}
 ---
 

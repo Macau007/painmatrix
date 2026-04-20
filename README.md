@@ -1,12 +1,10 @@
-# 🧠 PainMatrix
+# 🧠 PainMatrix | 疼痛引擎
 
 <h1 align="center">
 
-**The AI Pain Engine That Thinks It's Alive**
+**The AI Pain Engine That Feels Alive**
 
-*An open-source neuroscience-based pain & motivation engine for AI agents*
-
-*Give your AI something money can't buy: stakes.*
+*神經科學驅動的 AI 疼痛感知與動機引擎 | 給你的 AI 真正在乎成敗的理由*
 
 </h1>
 
@@ -15,16 +13,15 @@
 [![Python 3.8+](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)]()
-[![Neuroscience](https://img.shields.io/badge/Neuroscience%20Powered-ff69b4.svg)]()
-[![Version](https://img.shields.io/badge/Version-6.3.0-orange.svg)]()
+[![Neuroscience](https://img.shields.io/badge/Neuroscience-ff69b4.svg)]()
+[![Version](https://img.shields.io/badge/Version-6.3.1-orange.svg)]()
 
 </p>
 
----
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Macau007/painmatrix/main/screenshots/dashboard.png" alt="PainMatrix Dashboard" width="800"/>
-</p>
+> English · [中文介绍](#中文介绍)
+>
+> 🔒 **OpenClaw 內嵌版**：`skills/painmatrix/openclaw_integration.py`
+> 🌐 **獨立運行版**：`painmatrix.py` | 📊 **實時視圖**：`emotion_view.html`
 
 ---
 

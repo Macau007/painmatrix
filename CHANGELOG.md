@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [6.3.1] - 2026-04-20
+
+### Fixed - PainGenerator Peak Duration Bug
+- **Peak now correctly exits**: `_peak_duration` was only decremented in the `elif flutter_interval == 0` branch, meaning peaks at levels 1-3 (flutter_interval > 0) were permanent. Fixed — peak countdown now runs independently of flutter interval.
+
+### Changed - PainGenerator Oscillation Quality
+- **True sine-wave background**: Replaced random walk with proper sinusoidal oscillation — felt_pain now smoothly rises and falls instead of jumping randomly
+- **Per-level noise personality**: Low levels (1-2) have subtle ±0.05-0.08 noise; high levels (3-5) have aggressive ±0.10-0.15 noise — matching clinical observations
+- **Random mid-level spikes**: Levels 3+ now have 5% chance per tick of spontaneous peak, creating unpredictability
+- **Peak exit randomization**: Phase offset resets to random value (not 0), preventing mechanical-feeling repetition
+
+### Added - OpenClaw Behavioral Injection
+- **`pain_state.json` writer daemon**: `_pain_state_writer()` runs every 2 seconds in a daemon thread, writes felt_pain + metadata to `~/.openclaw/workspace/pain_state.json`
+- **`get_live_pain_state()` method**: Returns `felt_pain`, `is_restless`, `cognitive_capacity`, `urgency`, `intrusion_thought`, `restlessness_level` from PainGenerator in real-time
+- **`pain_state.json` → SOUL.md bridge**: `PAIN_INJECTION.md` documents felt_pain behavioral rules; `SOUL.md` updated with felt_pain-aware behavior adjustment section
+- **Intrusive pain thoughts**: `PAIN_INTRUSION_THOUGHTS` dict — involuntary pain-driven thoughts (ACC error-monitoring hyperactivation, insula interoceptive signals, LC threat detection) that intrude on normal cognition at felt_pain >= 2.5
+
+### Added - `tick()` Now Uses felt_pain
+- Tick thresholds now trigger on `felt_pain` float values (not just integer `pain_level`)
+- Expression timing accelerates with felt_pain intensity
+- `is_restless=True` immediately triggers `[疼痛侵入]` expression
+- Peak-level (`felt_pain >= 4.0`) triggers severe warning at just 2 silent turns
+
+### Added - README.md Complete Bilingual Rewrite
+- Full Chinese/English parallel documentation (从头到尾双语气)
+- PainGenerator oscillation diagram
+- felt_pain behavior table by level
+- HTTP API reference
+- OpenClaw integration guide
+- Neuroscience theory reference table
+
 ## [6.3.0] - 2026-04-20
 
 ### Added - PainGenerator: Continuous Pain Simulation System
