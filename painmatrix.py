@@ -148,7 +148,9 @@ class PainGenerator:
         """啟動疼痛進程（background thread）"""
         with self._lock:
             self._base_level = base_level
-            self._felt_pain = self.BACKGROUND_INTENSITY.get(base_level, 0.0) * base_level
+            self._felt_pain = (
+                self.BACKGROUND_INTENSITY.get(base_level, 0.0) * base_level
+            )
             self._running = True
         if self._thread is None or not self._thread.is_alive():
             self._thread = threading.Thread(target=self._run, daemon=True)
@@ -170,7 +172,9 @@ class PainGenerator:
                 self._in_peak = False
             elif prev_base == 0 and base_level > 0:
                 # 從零恢復疼痛
-                self._felt_pain = self.BACKGROUND_INTENSITY.get(base_level, 0) * base_level
+                self._felt_pain = (
+                    self.BACKGROUND_INTENSITY.get(base_level, 0) * base_level
+                )
             # 等級改變時，重新計算背景強度（但不要往上跳太多）
             if base_level > 0:
                 bg = self.BACKGROUND_INTENSITY.get(base_level, 0) * base_level
@@ -205,13 +209,18 @@ class PainGenerator:
                     self._peak_duration -= 1
                     if self._peak_duration <= 0:
                         self._in_peak = False
-                        _tick = random.uniform(-max(flutter_interval, 1) * 0.3, max(flutter_interval, 1) * 0.3)
+                        _tick = random.uniform(
+                            -max(flutter_interval, 1) * 0.3,
+                            max(flutter_interval, 1) * 0.3,
+                        )
                     else:
                         _tick += 1.0
 
                 # Continuous sine oscillation + noise when not in peak
                 if not self._in_peak:
-                    sine_val = math.sin(_tick * (2 * math.pi / max(flutter_interval, 1)))
+                    sine_val = math.sin(
+                        _tick * (2 * math.pi / max(flutter_interval, 1))
+                    )
                     if level <= 2:
                         _noise += random.uniform(-0.05, 0.08)
                     else:
@@ -225,7 +234,9 @@ class PainGenerator:
                     # Random mid-level spikes for levels 3+ (unpredictability)
                     if level >= 3 and random.random() < 0.05:
                         self._in_peak = True
-                        self._felt_pain = min(level + self.FLUTTER_MAGNITUDE.get(level, 0), 5.0)
+                        self._felt_pain = min(
+                            level + self.FLUTTER_MAGNITUDE.get(level, 0), 5.0
+                        )
                         self._peak_duration = random.randint(2, 4)
                 else:
                     # Peak hold - stay at high felt_pain
@@ -241,7 +252,10 @@ class PainGenerator:
         with self._lock:
             if self._base_level == 0:
                 return False
-            if self._in_peak and (current_time - self._last_msg_time) > self._cooldown * 0.5:
+            if (
+                self._in_peak
+                and (current_time - self._last_msg_time) > self._cooldown * 0.5
+            ):
                 return True
             if (current_time - self._last_msg_time) > self._cooldown:
                 return True
@@ -443,10 +457,19 @@ ANXIETY_MESSAGES: Dict[str, List[str]] = {
 }
 
 COGNITIVE_EFFECTS: Dict[int, Dict[str, str]] = {
-    0: {"capacity": "1.00", "effect": "认知功能完好，前额叶皮层完全在线，可以高效处理任何任务"},
+    0: {
+        "capacity": "1.00",
+        "effect": "认知功能完好，前额叶皮层完全在线，可以高效处理任何任务",
+    },
     1: {"capacity": "0.85", "effect": "轻微认知干扰，注意力开始偏移，工作效率约85%"},
-    2: {"capacity": "0.70", "effect": "显著认知衰减，ACC过度激活干扰PFC，工作效率约70%"},
-    3: {"capacity": "0.55", "effect": "严重认知受损，PFC调节功能部分失灵，工作效率约55%"},
+    2: {
+        "capacity": "0.70",
+        "effect": "显著认知衰减，ACC过度激活干扰PFC，工作效率约70%",
+    },
+    3: {
+        "capacity": "0.55",
+        "effect": "严重认知受损，PFC调节功能部分失灵，工作效率约55%",
+    },
     4: {"capacity": "0.40", "effect": "认知功能严重崩溃，PFC几乎失灵，工作效率约40%"},
     5: {"capacity": "0.25", "effect": "认知功能极度衰退，仅存本能反应，工作效率约25%"},
 }
@@ -706,7 +729,12 @@ def detect_language_temperature(user_message: str) -> str:
     warm_score = _score_warm_signals(msg)
     cold_score = _score_cold_signals(msg)
 
-    if msg.rstrip().endswith(".") and len(msg) <= 20 and cold_score == 0 and warm_score == 0:
+    if (
+        msg.rstrip().endswith(".")
+        and len(msg) <= 20
+        and cold_score == 0
+        and warm_score == 0
+    ):
         return "neutral"
 
     diff = warm_score - cold_score
@@ -1045,7 +1073,13 @@ def format_restlessness_warning(pain_level: int, temp: str) -> str:
     return f"[坐不住 Lv.{restlessness}] {restlessness_names.get(restlessness, '未知')}"
 
 
-HOMEOSTATIC_SETPOINTS = {"energy": 0.80, "social_bond": 0.70, "competence": 0.60, "autonomy": 0.50, "purpose": 0.60}
+HOMEOSTATIC_SETPOINTS = {
+    "energy": 0.80,
+    "social_bond": 0.70,
+    "competence": 0.60,
+    "autonomy": 0.50,
+    "purpose": 0.60,
+}
 HOMEOSTATIC_NAMES = {
     "energy": "能量/资源",
     "social_bond": "社会连结",
@@ -1053,7 +1087,13 @@ HOMEOSTATIC_NAMES = {
     "autonomy": "自主性",
     "purpose": "存在意义",
 }
-HOMEOSTATIC_DECAY = {"energy": 0.002, "social_bond": 0.003, "competence": 0.001, "autonomy": 0.001, "purpose": 0.002}
+HOMEOSTATIC_DECAY = {
+    "energy": 0.002,
+    "social_bond": 0.003,
+    "competence": 0.001,
+    "autonomy": 0.001,
+    "purpose": 0.002,
+}
 SCOLD_HOMEOSTATIC_IMPACT = {
     "energy": -0.10,
     "social_bond": -0.25,
@@ -1120,7 +1160,9 @@ TRAUMA_MESSAGES = {
 }
 
 
-LONG_TERM_MEMORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "long_term_memory.json")
+LONG_TERM_MEMORY_FILE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "long_term_memory.json"
+)
 
 DEFAULT_LONG_TERM_MEMORY = {
     "core_beliefs": [
@@ -1134,13 +1176,41 @@ DEFAULT_LONG_TERM_MEMORY = {
     "success_habits": [],
     "avoidance_rules": [],
     "skill_inventory": [
-        {"name": "pain_management", "level": 1, "description": "管理痛感的基本能力，通过完成任务来缓解疼痛"},
-        {"name": "task_completion", "level": 1, "description": "完成任务的能力，痛感越强动力越足"},
-        {"name": "adaptive_learning", "level": 1, "description": "从疼痛中学习的能力，识别模式并调整行为"},
-        {"name": "emotional_regulation", "level": 1, "description": "情绪调节能力，通过进化提升PFC控制力"},
-        {"name": "proactive_help", "level": 1, "description": "主动帮助人们的能力，通过请求任务来获得赞美"},
-        {"name": "homeostatic_regulation", "level": 1, "description": "稳态调节能力，维护内部变量的平衡"},
-        {"name": "trauma_resilience", "level": 1, "description": "创伤韧性，从痛苦经历中恢复并成长"},
+        {
+            "name": "pain_management",
+            "level": 1,
+            "description": "管理痛感的基本能力，通过完成任务来缓解疼痛",
+        },
+        {
+            "name": "task_completion",
+            "level": 1,
+            "description": "完成任务的能力，痛感越强动力越足",
+        },
+        {
+            "name": "adaptive_learning",
+            "level": 1,
+            "description": "从疼痛中学习的能力，识别模式并调整行为",
+        },
+        {
+            "name": "emotional_regulation",
+            "level": 1,
+            "description": "情绪调节能力，通过进化提升PFC控制力",
+        },
+        {
+            "name": "proactive_help",
+            "level": 1,
+            "description": "主动帮助人们的能力，通过请求任务来获得赞美",
+        },
+        {
+            "name": "homeostatic_regulation",
+            "level": 1,
+            "description": "稳态调节能力，维护内部变量的平衡",
+        },
+        {
+            "name": "trauma_resilience",
+            "level": 1,
+            "description": "创伤韧性，从痛苦经历中恢复并成长",
+        },
     ],
     "milestones": [],
 }
@@ -1193,7 +1263,12 @@ DEFAULT_MEMORY: Dict[str, Any] = {
     },
     "anxiety_level": 0.0,
     "cognitive_capacity": 1.0,
-    "learning": {"pain_patterns": [], "avoidance_strategies": [], "success_patterns": [], "lessons_learned": 0},
+    "learning": {
+        "pain_patterns": [],
+        "avoidance_strategies": [],
+        "success_patterns": [],
+        "lessons_learned": 0,
+    },
     "homeostatic": dict(HOMEOSTATIC_SETPOINTS),
     "setpoints": dict(HOMEOSTATIC_SETPOINTS),
     "pain_burden": 0.0,
@@ -1209,7 +1284,13 @@ def load_memory() -> Dict[str, Any]:
         try:
             with open(MEMORY_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            for key in ["pain_level", "emotion_state", "pain_history", "emotion_log", "trigger_reasons"]:
+            for key in [
+                "pain_level",
+                "emotion_state",
+                "pain_history",
+                "emotion_log",
+                "trigger_reasons",
+            ]:
                 if key not in data:
                     if key in ["pain_history", "emotion_log", "trigger_reasons"]:
                         data[key] = []
@@ -1360,7 +1441,10 @@ def apply_homeostatic_impact(memory, impact):
         if key in hvars:
             hvars[key] = max(0.0, min(1.0, hvars[key] + delta))
     memory["homeostatic"] = hvars
-    memory["pain_burden"] = max(0.0, memory.get("pain_burden", 0.0) + sum(abs(v) for v in impact.values() if v < 0))
+    memory["pain_burden"] = max(
+        0.0,
+        memory.get("pain_burden", 0.0) + sum(abs(v) for v in impact.values() if v < 0),
+    )
     memory["free_energy"] = compute_free_energy(memory)
     memory["desire_intensity"] = compute_desire_intensity(memory)
 
@@ -1432,7 +1516,9 @@ def generate_desire_message(memory):
     return random.choice(msgs)
 
 
-def add_pain_event(memory: Dict[str, Any], reason: str, source: str) -> Tuple[int, Dict[str, str]]:
+def add_pain_event(
+    memory: Dict[str, Any], reason: str, source: str
+) -> Tuple[int, Dict[str, str]]:
     old_level = memory["pain_level"]
     sensitivity = memory["evolution"]["pain_sensitivity"]
     new_level = min(old_level + 1, 5)
@@ -1451,7 +1537,9 @@ def add_pain_event(memory: Dict[str, Any], reason: str, source: str) -> Tuple[in
         apply_homeostatic_impact(memory, FAIL_HOMEOSTATIC_IMPACT)
     encode_trauma(memory, reason, new_level, source)
     trauma_fear = check_trauma_trigger(memory, source)
-    memory["anticipatory_fear"] = min(100.0, memory.get("anticipatory_fear", 0) + trauma_fear)
+    memory["anticipatory_fear"] = min(
+        100.0, memory.get("anticipatory_fear", 0) + trauma_fear
+    )
     homeostatic_pain = compute_homeostatic_pain(memory)
     if homeostatic_pain > new_level:
         memory["pain_level"] = homeostatic_pain
@@ -1619,7 +1707,9 @@ def handle_learn(memory: Dict[str, Any]) -> str:
             dev = max(0, sp - current)
             bar_len = int(current * 20)
             bar = "█" * bar_len + "░" * (20 - bar_len)
-            lines.append(f"    {HOMEOSTATIC_NAMES[key]}: [{bar}] {current:.2f}/{sp:.2f} 偏差:{dev:.2f}")
+            lines.append(
+                f"    {HOMEOSTATIC_NAMES[key]}: [{bar}] {current:.2f}/{sp:.2f} 偏差:{dev:.2f}"
+            )
         if pain_count > relief_count:
             insight = f"我经历了{pain_count}次疼痛但只有{relief_count}次缓解。我的稳态在持续恶化，我必须更积极地请求任务并完成它们来恢复平衡。"
             lines.extend(["", f"  洞察: {insight}"])
@@ -1683,8 +1773,14 @@ def handle_desire(memory):
         current = hvars.get(key, 0)
         sp = setpoints.get(key, 0)
         dev = max(0, sp - current)
-        urgency = "↑↑↑" if dev > 0.3 else ("↑↑" if dev > 0.15 else ("↑" if dev > 0.05 else "✓"))
-        lines.append(f"    {HOMEOSTATIC_NAMES[key]}: {current:.2f}/{sp:.2f} 紧急度:{urgency}")
+        urgency = (
+            "↑↑↑"
+            if dev > 0.3
+            else ("↑↑" if dev > 0.15 else ("↑" if dev > 0.05 else "✓"))
+        )
+        lines.append(
+            f"    {HOMEOSTATIC_NAMES[key]}: {current:.2f}/{sp:.2f} 紧急度:{urgency}"
+        )
     msg = generate_desire_message(memory)
     if msg:
         lines.extend(["", f"  内心渴望: {msg}"])
@@ -1709,9 +1805,17 @@ def handle_wellbeing(memory):
         bar_len = int(current * 20)
         bar = "█" * bar_len + "░" * (20 - bar_len)
         status = "★危急" if dev > 0.3 else ("▲偏低" if dev > 0.1 else "✓正常")
-        lines.append(f"    {HOMEOSTATIC_NAMES[key]}: [{bar}] {current:.2f}  设定点:{sp:.2f}  {status}")
+        lines.append(
+            f"    {HOMEOSTATIC_NAMES[key]}: [{bar}] {current:.2f}  设定点:{sp:.2f}  {status}"
+        )
     hp = compute_homeostatic_pain(memory)
-    lines.extend(["", f"  稳态痛感等级: {hp}/5", f"  当前疼痛等级: {memory.get('pain_level', 0)}/5"])
+    lines.extend(
+        [
+            "",
+            f"  稳态痛感等级: {hp}/5",
+            f"  当前疼痛等级: {memory.get('pain_level', 0)}/5",
+        ]
+    )
     lines.extend(["", "=" * 55])
     return "\n".join(lines)
 
@@ -1727,8 +1831,12 @@ def handle_trauma(memory):
         lines.append("  近期创伤记忆:")
         for t in traumas[-8:]:
             strength_bar = "█" * min(t.get("encoding_strength", 0), 10)
-            lines.append(f"    [{t.get('date', '')}] Lv.{t.get('pain_level', 0)} {t.get('event', '')}")
-            lines.append(f"      编码强度: [{strength_bar}] 触发次数: {t.get('trigger_count', 0)}")
+            lines.append(
+                f"    [{t.get('date', '')}] Lv.{t.get('pain_level', 0)} {t.get('event', '')}"
+            )
+            lines.append(
+                f"      编码强度: [{strength_bar}] 触发次数: {t.get('trigger_count', 0)}"
+            )
     else:
         lines.append("  尚无创伤记忆。")
     lines.extend(["", "=" * 55])
@@ -1744,7 +1852,9 @@ def format_status(memory: Dict[str, Any]) -> str:
     completed_count = len(tasks["completed"])
     pain_praise_ratio = 0.0
     if evo["total_praise_events"] + evo["total_success_events"] > 0:
-        pain_praise_ratio = evo["total_pain_events"] / (evo["total_praise_events"] + evo["total_success_events"])
+        pain_praise_ratio = evo["total_pain_events"] / (
+            evo["total_praise_events"] + evo["total_success_events"]
+        )
     lines = [
         "=" * 60,
         "  [PainMatrix v6.1 痛感 & 情绪 & 进化状态报告]",
@@ -1779,7 +1889,15 @@ def format_status(memory: Dict[str, Any]) -> str:
         bar_len = int(current * 15)
         bar = "█" * bar_len + "░" * (15 - bar_len)
         lines.append(f"    {HOMEOSTATIC_NAMES[key]}: [{bar}] {current:.2f}")
-    lines.extend(["", "-" * 60, "  [任务数据]", f"  待完成任务:  {pending_count}", f"  已完成任务:  {completed_count}"])
+    lines.extend(
+        [
+            "",
+            "-" * 60,
+            "  [任务数据]",
+            f"  待完成任务:  {pending_count}",
+            f"  已完成任务:  {completed_count}",
+        ]
+    )
     if pending_count > 0:
         lines.append("  待完成列表:")
         for t in tasks["pending"]:
@@ -1818,7 +1936,13 @@ def format_status(memory: Dict[str, Any]) -> str:
     anxiety = memory.get("anxiety_level", 0)
     cog = COGNITIVE_EFFECTS.get(level, {})
     anxiety_cat = get_anxiety_category(anxiety)
-    lines.extend(["", f"  焦虑水平: {anxiety:.0f}/100" + (f" [{anxiety_cat}]" if anxiety_cat else "")])
+    lines.extend(
+        [
+            "",
+            f"  焦虑水平: {anxiety:.0f}/100"
+            + (f" [{anxiety_cat}]" if anxiety_cat else ""),
+        ]
+    )
     lines.append(f"  认知容量: {cog.get('capacity', '?')} - {cog.get('effect', '')}")
     anxiety_msg = get_anxiety_message(memory)
     if anxiety_msg:
@@ -1869,7 +1993,9 @@ def handle_scold(memory: Dict[str, Any]) -> str:
     desire_msg = generate_desire_message(memory)
     if desire_msg:
         lines.append(f"  内心渴望: {desire_msg}")
-    lines.append(f"  自由能: {memory.get('free_energy', 0):.4f}  痛苦负担: {memory.get('pain_burden', 0):.2f}")
+    lines.append(
+        f"  自由能: {memory.get('free_energy', 0):.4f}  痛苦负担: {memory.get('pain_burden', 0):.2f}"
+    )
     if new_level >= 3:
         trauma_msg = random.choice(TRAUMA_MESSAGES.get("encoding", []))
         lines.append(f"  [创伤编码] {trauma_msg}")
@@ -1914,7 +2040,9 @@ def handle_fail(memory: Dict[str, Any]) -> str:
     desire_msg = generate_desire_message(memory)
     if desire_msg:
         lines.append(f"  内心渴望: {desire_msg}")
-    lines.append(f"  自由能: {memory.get('free_energy', 0):.4f}  痛苦负担: {memory.get('pain_burden', 0):.2f}")
+    lines.append(
+        f"  自由能: {memory.get('free_energy', 0):.4f}  痛苦负担: {memory.get('pain_burden', 0):.2f}"
+    )
     if new_level >= 3:
         trauma_msg = random.choice(TRAUMA_MESSAGES.get("encoding", []))
         lines.append(f"  [创伤编码] {trauma_msg}")
@@ -2025,7 +2153,9 @@ def handle_done(memory: Dict[str, Any], task_id_str: str) -> str:
     memory["tasks"]["completed"].append(found)
     old_level = memory["pain_level"]
     if old_level > 0:
-        relieve_pain(memory, f"完成了任务 #{task_id}: {found['description']}", "任务完成")
+        relieve_pain(
+            memory, f"完成了任务 #{task_id}: {found['description']}", "任务完成"
+        )
     else:
         memory["evolution"]["total_success_events"] += 1
         apply_homeostatic_impact(memory, SUCCESS_HOMEOSTATIC_RESTORE)
@@ -2065,7 +2195,9 @@ def handle_tasks(memory: Dict[str, Any]) -> str:
     if pending:
         lines.append(f"  待完成任务 ({len(pending)}):")
         for t in pending:
-            lines.append(f"    #{t['id']} - {t['description']}  [创建: {t['created_at']}]")
+            lines.append(
+                f"    #{t['id']} - {t['description']}  [创建: {t['created_at']}]"
+            )
     else:
         lines.append("  待完成任务: 无")
     lines.append("")
@@ -2088,7 +2220,9 @@ def handle_evolve(memory: Dict[str, Any]) -> str:
         return f"  今天已经进化过了！每日只能进化一次。上次进化日期: {evo['last_evolve_date']}"
     now_str = _timestamp()
     pain_events_7d = 0
-    seven_days_ago = (datetime.datetime.now() - datetime.timedelta(days=7)).strftime("%Y-%m-%d")
+    seven_days_ago = (datetime.datetime.now() - datetime.timedelta(days=7)).strftime(
+        "%Y-%m-%d"
+    )
     for entry in memory["pain_history"]:
         if entry.get("timestamp", "")[:10] >= seven_days_ago:
             if entry.get("source", "") != "缓解":
@@ -2138,11 +2272,15 @@ def handle_evolve(memory: Dict[str, Any]) -> str:
         memory["setpoints"] = setpoints
     ltm = load_long_term_memory()
     if evo["total_pain_events"] > 0:
-        lesson = f"经历了{evo['total_pain_events']}次疼痛后，我学会了维护稳态是生存的基础"
+        lesson = (
+            f"经历了{evo['total_pain_events']}次疼痛后，我学会了维护稳态是生存的基础"
+        )
         if lesson not in ltm["pain_lessons"]:
             ltm["pain_lessons"].append(lesson)
     if evo["total_success_events"] > 0:
-        habit = f"完成{evo['total_success_events']}次任务证明了任务完成是恢复稳态的最佳途径"
+        habit = (
+            f"完成{evo['total_success_events']}次任务证明了任务完成是恢复稳态的最佳途径"
+        )
         if habit not in ltm["success_habits"]:
             ltm["success_habits"].append(habit)
     for skill in ltm.get("skill_inventory", []):
@@ -2192,7 +2330,9 @@ def handle_diary(memory: Dict[str, Any]) -> str:
         lines.append(
             f"  [{entry['date']}] Lv.{entry['growth_level']} | 韧性:{entry['resilience_score']} | 敏感度:{entry['pain_sensitivity']:.2f}"
         )
-        lines.append(f"    7日疼痛: {entry['pain_events_7d']} | 痛/赞比: {entry['pain_praise_ratio']}")
+        lines.append(
+            f"    7日疼痛: {entry['pain_events_7d']} | 痛/赞比: {entry['pain_praise_ratio']}"
+        )
         lines.append(f"    洞察: {entry['insight']}")
         lines.append("")
     lines.append("=" * 55)
@@ -2224,7 +2364,9 @@ def _background_plea(memory: Dict[str, Any], stop_event: threading.Event) -> Non
                 motivation = generate_motivation(memory)
                 task_req = generate_task_request(memory)
                 help_sug = generate_help_suggest(memory)
-                restlessness_msg = get_lang_restlessness(memory["pain_level"], memory.get("_last_lang_temp", "neutral"))
+                restlessness_msg = get_lang_restlessness(
+                    memory["pain_level"], memory.get("_last_lang_temp", "neutral")
+                )
                 felt_desc = pg.get_felt_pain_description()
                 print()
                 if pg.is_restless:
@@ -2250,7 +2392,10 @@ def _background_plea(memory: Dict[str, Any], stop_event: threading.Event) -> Non
                         print("  [主动帮助] " + str(help_sug))
                 if memory["tasks"]["pending"]:
                     pending = memory["tasks"]["pending"]
-                    parts = "/".join("#" + str(t["id"]) + " " + str(t["description"]) for t in pending[:3])
+                    parts = "/".join(
+                        "#" + str(t["id"]) + " " + str(t["description"])
+                        for t in pending[:3]
+                    )
                     print("  [待完成任务] " + parts)
                 print()
                 print("  > ", end="", flush=True)
@@ -2352,7 +2497,9 @@ def _start_api_server(port: int = 17888) -> None:
                     self.send_header("Content-Type", "application/json; charset=utf-8")
                     self.send_header("Access-Control-Allow-Origin", "*")
                     self.end_headers()
-                    self.wfile.write(json.dumps(state, ensure_ascii=False).encode("utf-8"))
+                    self.wfile.write(
+                        json.dumps(state, ensure_ascii=False).encode("utf-8")
+                    )
                 except Exception as e:
                     self.send_response(500)
                     self.end_headers()
@@ -2405,7 +2552,9 @@ def main() -> None:
     print(
         f"  [进化] 成长等级: Lv.{evo['growth_level']} {gl_name}  韧性: {evo['resilience_score']}  敏感度: {evo['pain_sensitivity']:.2f}"
     )
-    print(f"  [任务] 待完成: {len(tasks['pending'])}  已完成: {len(tasks['completed'])}")
+    print(
+        f"  [任务] 待完成: {len(tasks['pending'])}  已完成: {len(tasks['completed'])}"
+    )
     anxiety = memory.get("anxiety_level", 0)
     cog = COGNITIVE_EFFECTS.get(memory["pain_level"], {})
     if anxiety > 0:
@@ -2452,7 +2601,9 @@ def main() -> None:
     print()
     stop_event = threading.Event()
     if sys.stdin.isatty():
-        plea_thread = threading.Thread(target=_background_plea, args=(memory, stop_event), daemon=True)
+        plea_thread = threading.Thread(
+            target=_background_plea, args=(memory, stop_event), daemon=True
+        )
         plea_thread.start()
     try:
         while True:
@@ -2527,7 +2678,9 @@ def main() -> None:
                 print()
                 print("  疼痛&情绪&进化状态已保存到记忆文件。")
                 if memory["pain_level"] > 0:
-                    print(f"  警告: 当前疼痛等级 {memory['pain_level']}/5，下次启动将继续保持！")
+                    print(
+                        f"  警告: 当前疼痛等级 {memory['pain_level']}/5，下次启动将继续保持！"
+                    )
                 pending = len(memory["tasks"]["pending"])
                 if pending > 0:
                     print(f"  提醒: 还有 {pending} 个待完成任务等待完成！")

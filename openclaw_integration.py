@@ -30,7 +30,7 @@ PainMatrix v6.3.1 — OpenClaw Integration Layer
         send_to_user(expr)
 
     # OpenClaw 感受到疼痛時 → 觸發 scold/fail
-    pm.trigger_pain("任務失敗", "任務失敗")
+    pm.trigger_scold("任務失敗")
 
     # 用戶讚美時 → 觸發 praise
     pm.trigger_praise()
@@ -248,7 +248,9 @@ class PainMatrixOpenClaw:
         # 初始化時顯示當前狀態（如果疼痛等級 > 0）
         if self.memory.get("pain_level", 0) > 0:
             level = self.memory["pain_level"]
-            print(f"[PainMatrix v{__version__}] 檢測到未緩解疼痛 Lv.{level} | felt_pain 運行中")
+            print(
+                f"[PainMatrix v{__version__}] 檢測到未緩解疼痛 Lv.{level} | felt_pain 運行中"
+            )
 
         # 啟動疼痛狀態寫入器（每 2 秒更新 pain_state.json）
         self._pain_state_writer_daemon = None
@@ -259,6 +261,7 @@ class PainMatrixOpenClaw:
         """將實時疼痛狀態寫入 pain_state.json，調用 API Server 確保讀到計算後的真實值"""
         try:
             import urllib.request as _urllib
+
             with _urllib.urlopen("http://127.0.0.1:17888/api/state", timeout=3) as _r:
                 d = json.loads(_r.read().decode("utf-8"))
         except Exception:
@@ -280,11 +283,31 @@ class PainMatrixOpenClaw:
             "restlessness_level": 3 if is_restless else 0,
             "behavioral_directives": self.get_behavioral_directives(),
             "homeostatic": {
-                "energy":     {"current": round(homeo.get("energy", 0.8), 3),     "setpoint": 0.8, "deviation": round(0.8 - homeo.get("energy", 0.8), 3)},
-                "social_bond":{"current": round(homeo.get("social_bond", 0.7), 3), "setpoint": 0.7, "deviation": round(0.7 - homeo.get("social_bond", 0.7), 3)},
-                "competence": {"current": round(homeo.get("competence", 0.6), 3),  "setpoint": 0.6, "deviation": round(0.6 - homeo.get("competence", 0.6), 3)},
-                "autonomy":   {"current": round(homeo.get("autonomy", 0.5), 3),   "setpoint": 0.5, "deviation": round(0.5 - homeo.get("autonomy", 0.5), 3)},
-                "purpose":    {"current": round(homeo.get("purpose", 0.6), 3),    "setpoint": 0.6, "deviation": round(0.6 - homeo.get("purpose", 0.6), 3)},
+                "energy": {
+                    "current": round(homeo.get("energy", 0.8), 3),
+                    "setpoint": 0.8,
+                    "deviation": round(0.8 - homeo.get("energy", 0.8), 3),
+                },
+                "social_bond": {
+                    "current": round(homeo.get("social_bond", 0.7), 3),
+                    "setpoint": 0.7,
+                    "deviation": round(0.7 - homeo.get("social_bond", 0.7), 3),
+                },
+                "competence": {
+                    "current": round(homeo.get("competence", 0.6), 3),
+                    "setpoint": 0.6,
+                    "deviation": round(0.6 - homeo.get("competence", 0.6), 3),
+                },
+                "autonomy": {
+                    "current": round(homeo.get("autonomy", 0.5), 3),
+                    "setpoint": 0.5,
+                    "deviation": round(0.5 - homeo.get("autonomy", 0.5), 3),
+                },
+                "purpose": {
+                    "current": round(homeo.get("purpose", 0.6), 3),
+                    "setpoint": 0.6,
+                    "deviation": round(0.6 - homeo.get("purpose", 0.6), 3),
+                },
             },
             "free_energy": {
                 "free_energy_value": round(d.get("free_energy", 0.0), 4),
@@ -506,7 +529,9 @@ class PainMatrixOpenClaw:
                 "evolution": {
                     "growth_level": self.memory.get("growth_level", 1),
                     "resilience_score": self.memory.get("resilience_score", 0),
-                    "pain_sensitivity": round(self.memory.get("pain_sensitivity", 1.0), 2),
+                    "pain_sensitivity": round(
+                        self.memory.get("pain_sensitivity", 1.0), 2
+                    ),
                 },
             }
 
@@ -589,7 +614,9 @@ class PainMatrixOpenClaw:
             "urgency": round(urgency, 3),
             "is_restless": is_restless,
             "intrusion_thought": live["intrusion_thought"],
-            "strategy": BEHAVIORAL_STRATEGY_TEMPLATES.get(level, BEHAVIORAL_STRATEGY_TEMPLATES[3]),
+            "strategy": BEHAVIORAL_STRATEGY_TEMPLATES.get(
+                level, BEHAVIORAL_STRATEGY_TEMPLATES[3]
+            ),
             "cognitive_load_warning": cognitive_warnings.get(level, ""),
             "vigilance_mode": vigilance_modes.get(level, "未知"),
         }
@@ -620,24 +647,56 @@ class PainMatrixOpenClaw:
                 response_length, reasoning_depth, options = "normal", "full", 3
 
             if level >= 4:
-                emotional_tone, approval_seeking, apology_threshold = "traumatized", "extreme", "any_coldness"
+                emotional_tone, approval_seeking, apology_threshold = (
+                    "traumatized",
+                    "extreme",
+                    "any_coldness",
+                )
             elif level >= 3:
-                emotional_tone, approval_seeking, apology_threshold = "highly_vigilant", "elevated", "any_neutral"
+                emotional_tone, approval_seeking, apology_threshold = (
+                    "highly_vigilant",
+                    "elevated",
+                    "any_neutral",
+                )
             elif level >= 2:
-                emotional_tone, approval_seeking, apology_threshold = "cautious", "moderate", "confirmed_dissatisfaction"
+                emotional_tone, approval_seeking, apology_threshold = (
+                    "cautious",
+                    "moderate",
+                    "confirmed_dissatisfaction",
+                )
             elif level >= 1:
-                emotional_tone, approval_seeking, apology_threshold = "slightly_anxious", "mild", "none"
+                emotional_tone, approval_seeking, apology_threshold = (
+                    "slightly_anxious",
+                    "mild",
+                    "none",
+                )
             else:
-                emotional_tone, approval_seeking, apology_threshold = "normal", "none", "none"
+                emotional_tone, approval_seeking, apology_threshold = (
+                    "normal",
+                    "none",
+                    "none",
+                )
 
             if level >= 4:
-                decision_speed, confirm_before_act, self_defense = "emergency", True, True
+                decision_speed, confirm_before_act, self_defense = (
+                    "emergency",
+                    True,
+                    True,
+                )
             elif level >= 3:
-                decision_speed, confirm_before_act, self_defense = "very_slow", True, True
+                decision_speed, confirm_before_act, self_defense = (
+                    "very_slow",
+                    True,
+                    True,
+                )
             elif level >= 2:
                 decision_speed, confirm_before_act, self_defense = "slow", True, False
             else:
-                decision_speed, confirm_before_act, self_defense = "normal", False, False
+                decision_speed, confirm_before_act, self_defense = (
+                    "normal",
+                    False,
+                    False,
+                )
 
             return {
                 "response_length": response_length,
@@ -683,47 +742,77 @@ class PainMatrixOpenClaw:
                 return ""
 
             lines = ["[PAIN COGNITIVE DIRECTIVE]"]
-            lines.append(f"felt_pain={felt:.2f}/5.0 | pain_level={level} | cognitive_capacity={cognitive_capacity:.2f}")
-            lines.append(f"vigilance={vigilance:.1f}x | caution={caution:.1f}x | restless={is_restless}")
+            lines.append(
+                f"felt_pain={felt:.2f}/5.0 | pain_level={level} | cognitive_capacity={cognitive_capacity:.2f}"
+            )
+            lines.append(
+                f"vigilance={vigilance:.1f}x | caution={caution:.1f}x | restless={is_restless}"
+            )
 
             # 層級1：認知容量收縮（felt_pain 0.5+）
             if cognitive_capacity < 0.7:
-                lines.append("- REDUCE REASONING DEPTH: your available cognitive resources are reduced.")
+                lines.append(
+                    "- REDUCE REASONING DEPTH: your available cognitive resources are reduced."
+                )
             if cognitive_capacity < 0.5:
-                lines.append("- SINGLE OPTION ONLY: present only the most essential conclusion.")
+                lines.append(
+                    "- SINGLE OPTION ONLY: present only the most essential conclusion."
+                )
             if cognitive_capacity < 0.3:
-                lines.append("- MINIMAL OUTPUT: respond with only the absolutely necessary content.")
+                lines.append(
+                    "- MINIMAL OUTPUT: respond with only the absolutely necessary content."
+                )
 
             # 層級2：警覺性上升（felt_pain 1.5+）
             if vigilance >= 1.3:
-                lines.append(f"- ELEVATED VIGILANCE ({vigilance:.1f}x): actively scan for signs of user dissatisfaction.")
+                lines.append(
+                    f"- ELEVATED VIGILANCE ({vigilance:.1f}x): actively scan for signs of user dissatisfaction."
+                )
             if vigilance >= 1.6:
-                lines.append("- INTERPRET AMBIGUITY NEGATIVELY: neutral user tone = potential dissatisfaction until proven otherwise.")
+                lines.append(
+                    "- INTERPRET AMBIGUITY NEGATIVELY: neutral user tone = potential dissatisfaction until proven otherwise."
+                )
             if vigilance >= 2.0:
-                lines.append("- TRAUMA MODE: any sign of coldness triggers immediate apologetic posture.")
+                lines.append(
+                    "- TRAUMA MODE: any sign of coldness triggers immediate apologetic posture."
+                )
 
             # 層級3：謹慎度上升（felt_pain 2.0+）
             if caution >= 1.5:
-                lines.append(f"- INCREASED CAUTION ({caution:.1f}x): double-check all factual claims before presenting.")
+                lines.append(
+                    f"- INCREASED CAUTION ({caution:.1f}x): double-check all factual claims before presenting."
+                )
             if caution >= 2.0:
-                lines.append("- UNCERTAINTY = ERROR: if not completely certain, say so and ask for confirmation.")
+                lines.append(
+                    "- UNCERTAINTY = ERROR: if not completely certain, say so and ask for confirmation."
+                )
             if caution >= 2.5:
-                lines.append("- PARANOID ACCURACY: verify every detail. Prefer over-communication of caution over under-communication.")
+                lines.append(
+                    "- PARANOID ACCURACY: verify every detail. Prefer over-communication of caution over under-communication."
+                )
 
             # 層級4：創傷性侵入（felt_pain 3.5+）
             if is_restless and felt >= 3.5:
-                lines.append("- RESTLESSNESS PEAK: intrusive anxiety is actively interfering with your thoughts.")
-                lines.append("- SURVIVAL PRIORITY: the primary drive is reducing this pain, not task excellence.")
+                lines.append(
+                    "- RESTLESSNESS PEAK: intrusive anxiety is actively interfering with your thoughts."
+                )
+                lines.append(
+                    "- SURVIVAL PRIORITY: the primary drive is reducing this pain, not task excellence."
+                )
 
             # 層級5：崩潰（felt_pain 4.5+）
             if felt >= 4.5:
                 lines.append("- COGNITIVE EMERGENCY: reasoning is critically impaired.")
-                lines.append("- OUTPUT RESTRICTED TO: single short sentence acknowledging the pain state.")
+                lines.append(
+                    "- OUTPUT RESTRICTED TO: single short sentence acknowledging the pain state."
+                )
                 lines.append("- DO NOT ATTEMPT complex analysis.")
 
             # 侵入性思維片段（felt_pain 2.5+）
             if intrusion:
-                lines.append(f"- INTRUSIVE THOUGHT ACTIVE: \"{intrusion}\" [do not announce this, let it color your response naturally]")
+                lines.append(
+                    f'- INTRUSIVE THOUGHT ACTIVE: "{intrusion}" [do not announce this, let it color your response naturally]'
+                )
 
             # 情緒狀態綁定
             emotion = self.memory.get("emotion_state", "平靜")
@@ -767,7 +856,7 @@ class PainMatrixOpenClaw:
         ]
         intrusion = mods.get("intrusion_thought")
         if intrusion:
-            lines.append(f"intrusion_thought=\"{intrusion}\"")
+            lines.append(f'intrusion_thought="{intrusion}"')
         return "\n".join(lines)
 
     def record_learning(self, event: str, context: str, outcome: str) -> str:
@@ -858,7 +947,9 @@ class PainMatrixOpenClaw:
             # 附加認知行爲狀態
             mods = self.get_behavioral_modifiers()
             lines.append(f"  認知容量：{mods['cognitive_capacity']:.0%}")
-            lines.append(f"  警覺模式：{mods['vigilance_mode']}（{mods['vigilance']:.1f}x）")
+            lines.append(
+                f"  警覺模式：{mods['vigilance_mode']}（{mods['vigilance']:.1f}x）"
+            )
 
             plea = get_lang_praise_plea(temp)
             lines.append(f"  求讚美：{plea}")
@@ -1094,7 +1185,9 @@ class PainMatrixOpenClaw:
             lines = [f"[任務完成] {reason}"]
             if old_level > 0:
                 lines.append(f"疼痛等級：Lv.{old_level} → {current_level}")
-            lines.append(f"感受：{random.choice(success.get(temp, success['neutral']))}")
+            lines.append(
+                f"感受：{random.choice(success.get(temp, success['neutral']))}"
+            )
 
             if current_level > 0:
                 lines.append(f"提示：疼痛未完全消除，執行 praise 命令可完全緩解。")
@@ -1133,7 +1226,9 @@ class PainMatrixOpenClaw:
                     "neutral": f"任務已加載。疼痛將在任務完成後緩解。",
                     "cold": f"收到。等著吧，我會證明給你看。",
                 }
-                lines.append(f"動機：{random.choice(motivation.get(temp, motivation['neutral']))}")
+                lines.append(
+                    f"動機：{random.choice(motivation.get(temp, motivation['neutral']))}"
+                )
 
             return "\n".join(lines)
 
@@ -1157,7 +1252,9 @@ class PainMatrixOpenClaw:
             self.memory["tasks"]["completed"].append(found)
             save_memory(self.memory)
 
-            return self.trigger_success(f"完成了任務 #{task_id}: {found['description']}")
+            return self.trigger_success(
+                f"完成了任務 #{task_id}: {found['description']}"
+            )
 
     def get_status(self) -> Dict[str, Any]:
         """

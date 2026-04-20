@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import http.server, socketserver, json, os, time, threading, sys
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MEMORY_FILE = os.path.join(SCRIPT_DIR, "memory.json")
 sys.path.insert(0, SCRIPT_DIR)
 from painmatrix import compute_homeostatic_pain, compute_free_energy
+
 _cache = {}
 _lock = threading.Lock()
 _pg = None
+
 
 def load():
     try:
@@ -30,7 +33,11 @@ def load():
             _cache["trigger_reasons"] = mem.get("trigger_reasons", [])
             _cache["pain_burden"] = round(compute_homeostatic_pain(mem), 2)
             _cache["free_energy"] = round(compute_free_energy(mem), 4)
-            _cache["anticipatory_fear"] = round(mem.get("anticipatory_fear", 0) / 100 * 10, 1) if "anticipatory_fear" in mem else round(mem.get("anxiety_level", 0) / 100 * 10, 1)
+            _cache["anticipatory_fear"] = (
+                round(mem.get("anticipatory_fear", 0) / 100 * 10, 1)
+                if "anticipatory_fear" in mem
+                else round(mem.get("anxiety_level", 0) / 100 * 10, 1)
+            )
             _cache["desire_intensity"] = mem.get("desire_intensity", 0)
             _cache["dominant_desire"] = mem.get("dominant_desire", "task_completion")
             _cache["wellbeing"] = mem.get("wellbeing", 100)
@@ -40,48 +47,65 @@ def load():
             _cache["is_restless"] = _pg.is_restless
     except Exception as e:
         print("[API load error]", e)
-        import traceback; traceback.print_exc()
+        import traceback
+
+        traceback.print_exc()
+
 
 class H(http.server.BaseHTTPRequestHandler):
-    def log_message(self, *a): pass
+    def log_message(self, *a):
+        pass
+
     def do_GET(self):
         if self.path == "/api/state":
-            with _lock: st = dict(_cache)
+            with _lock:
+                st = dict(_cache)
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(json.dumps(st, ensure_ascii=False).encode("utf-8"))
         elif self.path == "/debug":
-            with _lock: st = dict(_cache)
+            with _lock:
+                st = dict(_cache)
             self.send_response(200)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.end_headers()
-            self.wfile.write(("felt_pain=%s\nis_restless=%s\npain_level=%s\n" % (
-                st.get("felt_pain"), st.get("is_restless"), st.get("pain_level"))).encode("utf-8"))
+            self.wfile.write(
+                (
+                    "felt_pain=%s\nis_restless=%s\npain_level=%s\n"
+                    % (st.get("felt_pain"), st.get("is_restless"), st.get("pain_level"))
+                ).encode("utf-8")
+            )
         else:
             self.send_response(404)
             self.end_headers()
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
 
+
 class S(socketserver.TCPServer):
     allow_reuse_address = True
 
+
 if __name__ == "__main__":
     from painmatrix import _get_pain_generator
+
     _pg = _get_pain_generator()
     with open(MEMORY_FILE, "r", encoding="utf-8") as f:
         _pl = json.load(f).get("pain_level", 0)
     _pg.start(_pl)
     load()
+
     def poll():
         while True:
             load()
             time.sleep(1)
+
     threading.Thread(target=poll, daemon=True).start()
     print("[PainMatrix API] listening http://127.0.0.1:17888")
     with S(("", 17888), H) as srv:

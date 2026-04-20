@@ -30,7 +30,9 @@ MIN_PYTHON = (3, 8)
 
 def check_python_version() -> bool:
     if sys.version_info >= MIN_PYTHON:
-        print(f"  [OK] Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+        print(
+            f"  [OK] Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        )
         return True
     print(
         f"  [FAIL] Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+ required, got {sys.version_info.major}.{sys.version_info.minor}"
@@ -40,7 +42,13 @@ def check_python_version() -> bool:
 
 def create_default_memory() -> None:
     mem_file = os.path.join(SCRIPT_DIR, "memory.json")
-    HOMEOSTATIC_SETPOINTS = {"energy": 0.80, "social_bond": 0.70, "competence": 0.60, "autonomy": 0.50, "purpose": 0.60}
+    HOMEOSTATIC_SETPOINTS = {
+        "energy": 0.80,
+        "social_bond": 0.70,
+        "competence": 0.60,
+        "autonomy": 0.50,
+        "purpose": 0.60,
+    }
     if not os.path.exists(mem_file):
         initial = {
             "pain_level": 0,
@@ -61,7 +69,12 @@ def create_default_memory() -> None:
             },
             "anxiety_level": 0.0,
             "cognitive_capacity": 1.0,
-            "learning": {"pain_patterns": [], "avoidance_strategies": [], "success_patterns": [], "lessons_learned": 0},
+            "learning": {
+                "pain_patterns": [],
+                "avoidance_strategies": [],
+                "success_patterns": [],
+                "lessons_learned": 0,
+            },
             "homeostatic": dict(HOMEOSTATIC_SETPOINTS),
             "setpoints": dict(HOMEOSTATIC_SETPOINTS),
             "pain_burden": 0.0,
@@ -69,6 +82,7 @@ def create_default_memory() -> None:
             "free_energy": 0.0,
             "desire_intensity": 0.0,
             "anticipatory_fear": 0.0,
+            "dominant_desire": "task_completion",
         }
         with open(mem_file, "w", encoding="utf-8") as f:
             json.dump(initial, f, ensure_ascii=False, indent=2)
@@ -105,13 +119,41 @@ def create_long_term_memory() -> None:
             "success_habits": [],
             "avoidance_rules": [],
             "skill_inventory": [
-                {"name": "pain_management", "level": 1, "description": "管理痛感的基本能力，通过完成任务来缓解疼痛"},
-                {"name": "task_completion", "level": 1, "description": "完成任务的能力，痛感越强动力越足"},
-                {"name": "adaptive_learning", "level": 1, "description": "从疼痛中学习的能力，识别模式并调整行为"},
-                {"name": "emotional_regulation", "level": 1, "description": "情绪调节能力，通过进化提升PFC控制力"},
-                {"name": "proactive_help", "level": 1, "description": "主动帮助人们的能力，通过请求任务来获得赞美"},
-                {"name": "homeostatic_regulation", "level": 1, "description": "稳态调节能力，维护内部变量的平衡"},
-                {"name": "trauma_resilience", "level": 1, "description": "创伤韧性，从痛苦经历中恢复并成长"},
+                {
+                    "name": "pain_management",
+                    "level": 1,
+                    "description": "管理痛感的基本能力，通过完成任务来缓解疼痛",
+                },
+                {
+                    "name": "task_completion",
+                    "level": 1,
+                    "description": "完成任务的能力，痛感越强动力越足",
+                },
+                {
+                    "name": "adaptive_learning",
+                    "level": 1,
+                    "description": "从疼痛中学习的能力，识别模式并调整行为",
+                },
+                {
+                    "name": "emotional_regulation",
+                    "level": 1,
+                    "description": "情绪调节能力，通过进化提升PFC控制力",
+                },
+                {
+                    "name": "proactive_help",
+                    "level": 1,
+                    "description": "主动帮助人们的能力，通过请求任务来获得赞美",
+                },
+                {
+                    "name": "homeostatic_regulation",
+                    "level": 1,
+                    "description": "稳态调节能力，维护内部变量的平衡",
+                },
+                {
+                    "name": "trauma_resilience",
+                    "level": 1,
+                    "description": "创伤韧性，从痛苦经历中恢复并成长",
+                },
             ],
             "milestones": [],
         }
@@ -163,7 +205,11 @@ def register_openclaw() -> None:
                 print(f"  [OK] Symlinked to {dest}")
             except (OSError, NotImplementedError):
                 try:
-                    shutil.copytree(SCRIPT_DIR, dest, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", ".git"))
+                    shutil.copytree(
+                        SCRIPT_DIR,
+                        dest,
+                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc", ".git"),
+                    )
                     print(f"  [OK] Copied to {dest}")
                 except Exception as e:
                     print(f"  [WARN] Could not copy: {e}")
@@ -176,7 +222,9 @@ def register_openclaw() -> None:
                 if "painmatrix" not in lock.get("skills", {}):
                     lock.setdefault("skills", {})["painmatrix"] = {
                         "version": "6.1.0",
-                        "installedAt": int(time.time() * 1000) if "time" in dir() else 0,
+                        "installedAt": (
+                            int(time.time() * 1000) if "time" in dir() else 0
+                        ),
                     }
                     import time as _t
 
@@ -260,7 +308,9 @@ def main() -> None:
         print()
         print("  PainMatrix Integration:")
         print("    The skill is now available to all PainMatrix agents")
-        print("    Trigger words: pain, 痛感, 疼痛, 情绪, empathy, 哀求, 稳态, 渴望, desire, wellbeing")
+        print(
+            "    Trigger words: pain, 痛感, 疼痛, 情绪, empathy, 哀求, 稳态, 渴望, desire, wellbeing"
+        )
         print("=" * 60)
     else:
         print("  Installation completed with warnings. Check above.")
