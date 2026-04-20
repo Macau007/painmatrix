@@ -4,6 +4,7 @@ import http.server, socketserver, json, os, time, threading, sys
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MEMORY_FILE = os.path.join(SCRIPT_DIR, "memory.json")
 sys.path.insert(0, SCRIPT_DIR)
+from painmatrix import compute_homeostatic_pain, compute_free_energy
 _cache = {}
 _lock = threading.Lock()
 _pg = None
@@ -27,9 +28,9 @@ def load():
             _cache["evolution"] = mem.get("evolution", {})
             _cache["tasks"] = mem.get("tasks", {})
             _cache["trigger_reasons"] = mem.get("trigger_reasons", [])
-            _cache["pain_burden"] = mem.get("pain_burden", 0)
-            _cache["free_energy"] = mem.get("free_energy", 0)
-            _cache["anticipatory_fear"] = mem.get("anticipatory_fear", 0)
+            _cache["pain_burden"] = round(compute_homeostatic_pain(mem), 2)
+            _cache["free_energy"] = round(compute_free_energy(mem), 4)
+            _cache["anticipatory_fear"] = round(mem.get("anticipatory_fear", 0) / 100 * 10, 1) if "anticipatory_fear" in mem else round(mem.get("anxiety_level", 0) / 100 * 10, 1)
             _cache["desire_intensity"] = mem.get("desire_intensity", 0)
             _cache["dominant_desire"] = mem.get("dominant_desire", "task_completion")
             _cache["wellbeing"] = mem.get("wellbeing", 100)
