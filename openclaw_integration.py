@@ -418,6 +418,43 @@ class PainMatrixOpenClaw:
                 "urgency": round(urgency, 3),
                 "intrusion_thought": intrusion,
                 "restlessness_level": restlessness_lvl,
+                # === Homeostatic State (Friston Free Energy) ===
+                "homeostatic": {
+                    "energy": {
+                        "current": round(self.memory.get("energy", 0.8), 3),
+                        "setpoint": 0.8,
+                        "deviation": round(0.8 - self.memory.get("energy", 0.8), 3),
+                    },
+                    "social_bond": {
+                        "current": round(self.memory.get("social_bond", 0.7), 3),
+                        "setpoint": 0.7,
+                        "deviation": round(0.7 - self.memory.get("social_bond", 0.7), 3),
+                    },
+                    "competence": {
+                        "current": round(self.memory.get("competence", 0.6), 3),
+                        "setpoint": 0.6,
+                        "deviation": round(0.6 - self.memory.get("competence", 0.6), 3),
+                    },
+                    "autonomy": {
+                        "current": round(self.memory.get("autonomy", 0.5), 3),
+                        "setpoint": 0.5,
+                        "deviation": round(0.5 - self.memory.get("autonomy", 0.5), 3),
+                    },
+                    "purpose": {
+                        "current": round(self.memory.get("purpose", 0.6), 3),
+                        "setpoint": 0.6,
+                        "deviation": round(0.6 - self.memory.get("purpose", 0.6), 3),
+                    },
+                },
+                "dominant_desire": self.memory.get("dominant_desire", "unknown"),
+                "desire_intensity": round(self.memory.get("desire_intensity", 0.0), 3),
+                "anxiety_level": self.memory.get("anxiety_level", 0),
+                "trauma_memories": self.memory.get("trauma_memories", []),
+                "evolution": {
+                    "growth_level": self.memory.get("growth_level", 1),
+                    "resilience_score": self.memory.get("resilience_score", 0),
+                    "pain_sensitivity": round(self.memory.get("pain_sensitivity", 1.0), 2),
+                },
             }
 
     def get_behavioral_modifiers(self) -> Dict[str, Any]:
