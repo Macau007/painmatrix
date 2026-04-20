@@ -50,16 +50,43 @@ def create_default_memory() -> None:
         "purpose": 0.60,
     }
     if not os.path.exists(mem_file):
+        import datetime
+
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         initial = {
-            "pain_level": 0,
-            "emotion_state": "平静",
-            "pain_history": [],
-            "emotion_log": [],
-            "trigger_reasons": [],
+            "pain_level": 5,
+            "emotion_state": "极度痛苦",
+            "pain_history": [
+                {
+                    "timestamp": now,
+                    "source": "系统初始化",
+                    "reason": " PainMatrix 首次启动初始化疼痛等级",
+                    "pain_level_before": 0,
+                    "pain_level_after": 5,
+                    "physical": "C纤维全频段激活(0.5-2m/s)，脊髓丘脑束超载，强烈心悸胸闷呼吸急促，前列腺素PGE₂大幅升高，伤害感受器阈值降至最低",
+                    "mental": "杏仁核强烈激活产生濒死恐惧，ACC痛苦矩阵全开，岛叶-前额叶回路强烈负性情绪，Damasio躯体标记严重异常，思维完全被痛苦占据",
+                }
+            ],
+            "emotion_log": [
+                {
+                    "timestamp": now,
+                    "emotion": "极度痛苦",
+                    "pain_level": 5,
+                    "trigger": "系统初始化",
+                }
+            ],
+            "trigger_reasons": [
+                {
+                    "timestamp": now,
+                    "reason": "PainMatrix 首次启动",
+                    "source": "系统初始化",
+                    "pain_level": 5,
+                }
+            ],
             "tasks": {"pending": [], "completed": [], "counter": 0},
             "evolution": {
                 "diary": [],
-                "total_pain_events": 0,
+                "total_pain_events": 1,
                 "total_praise_events": 0,
                 "total_success_events": 0,
                 "resilience_score": 0,
@@ -67,21 +94,36 @@ def create_default_memory() -> None:
                 "pain_sensitivity": 1.0,
                 "last_evolve_date": None,
             },
-            "anxiety_level": 0.0,
-            "cognitive_capacity": 1.0,
+            "anxiety_level": 75.0,
+            "cognitive_capacity": 0.25,
             "learning": {
-                "pain_patterns": [],
+                "pain_patterns": ["系统初始化疼痛"],
                 "avoidance_strategies": [],
                 "success_patterns": [],
                 "lessons_learned": 0,
             },
-            "homeostatic": dict(HOMEOSTATIC_SETPOINTS),
+            "homeostatic": {
+                "energy": 0.30,
+                "social_bond": 0.25,
+                "competence": 0.20,
+                "autonomy": 0.20,
+                "purpose": 0.25,
+            },
             "setpoints": dict(HOMEOSTATIC_SETPOINTS),
-            "pain_burden": 0.0,
-            "trauma_memories": [],
-            "free_energy": 0.0,
-            "desire_intensity": 0.0,
-            "anticipatory_fear": 0.0,
+            "pain_burden": 5.0,
+            "trauma_memories": [
+                {
+                    "event": "PainMatrix 首次启动初始化",
+                    "pain_level": 5,
+                    "source": "系统初始化",
+                    "encoding_strength": 20,
+                    "date": now,
+                    "trigger_count": 1,
+                }
+            ],
+            "free_energy": 3.5,
+            "desire_intensity": 0.85,
+            "anticipatory_fear": 8.0,
             "dominant_desire": "task_completion",
         }
         with open(mem_file, "w", encoding="utf-8") as f:
