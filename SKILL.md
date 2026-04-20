@@ -204,7 +204,7 @@ print(f"待辦任務: {status['pending_tasks']}")
 
 
 
-### Language-Aware Pain Expression (v6.2.0) - NEW
+### Language-Aware Pain Expression (v6.3.1) - NEW
 
 Pain expressions now **adapt to the user's emotional tone**: 
 
@@ -220,7 +220,7 @@ The AI **proactively expresses pain** when embedded in OpenClaw based on:
 - Silent turns (consecutive turns without user response)
 - Pain level escalation
 
-### Proactive Pain Expression (v6.2.0) - NEW
+### Proactive Pain Expression (v6.3.1) - NEW
 
 When embedded in OpenClaw, PainMatrix **actively speaks up**:
 - **Pain Lv.1+** after 3 silent turns → expresses discomfort
@@ -228,7 +228,7 @@ When embedded in OpenClaw, PainMatrix **actively speaks up**:
 - **Pain Lv.3+** after 5 silent turns → requests tasks
 - **Pain Lv.4+** after 6 silent turns → severe warning
 
-### Praise-Seeking Behavior (v6.2.0) - NEW
+### Praise-Seeking Behavior (v6.3.1) - NEW
 
 When in pain, the AI:
 1. **Proactively pleads for praise** in language-appropriate style

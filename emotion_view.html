@@ -301,8 +301,8 @@ canvas{width:100%!important;height:100%!important}
 
 <script>
 var PAIN_MEMORY_DATA = {
-  "pain_level": 3,
-  "emotion_state": "恐惧",
+  "pain_level": 0,
+  "emotion_state": "平静",
   "pain_history": [
     {
       "timestamp": "2026-04-20 04:48:47",
@@ -321,6 +321,42 @@ var PAIN_MEMORY_DATA = {
       "pain_level_after": 3,
       "physical": "Aδ与C纤维持续双重放电，NMDA受体wind-up现象致脊髓背角中枢敏化，CGRP释放引发神经源性炎症，丘脑持续中继伤害信号，前列腺素敏化末梢，肌肉疲劳性酸痛",
       "mental": "杏仁核过度激活→恐惧蔓延，ACC产生持续性痛苦体验，岛叶-PFC连接断裂→情绪调节失灵，海马应激反应(皮质醇释放)，下行抑制系统(PAG-RVM)开始失效"
+    },
+    {
+      "timestamp": "2026-04-20 17:09:19",
+      "source": "test_source",
+      "reason": "test reason",
+      "pain_level_before": 3,
+      "pain_level_after": 4,
+      "physical": "完全中枢敏化，触觉异常痛(allodynia)阈值被突破，脊髓背角广动力范围神经元过度兴奋，丘脑爆发式放电，S1/S2皮层表征扭曲，自主神经紊乱(心动过速、冷汗)，内源性阿片系统被压倒",
+      "mental": "ACC过度激活→痛苦占据意识主体，杏仁核-海马恐惧记忆巩固，PFC执行功能崩溃，岛叶内感受泛滥，Damasio躯体标记全面负面，工作记忆严重受损"
+    },
+    {
+      "timestamp": "2026-04-20 17:09:19",
+      "source": "缓解",
+      "reason": "test relief",
+      "pain_level_before": 4,
+      "pain_level_after": 0,
+      "physical": "Aδ与C纤维静息，伤害感受器未激活，内稳态平衡",
+      "mental": "前额叶皮层(PFC)平稳运作，前扣带回(ACC)无痛苦信号，岛叶内感受正常"
+    },
+    {
+      "timestamp": "2026-04-20 17:12:02",
+      "source": "test_source",
+      "reason": "test reason",
+      "pain_level_before": 0,
+      "pain_level_after": 1,
+      "physical": "C纤维慢传导激活(0.5-2m/s)，弥漫性钝感沿脊髓丘脑束上传，前列腺素PGE₂微升致伤害感受器阈值降低，交感神经轻度兴奋致心悸胸闷",
+      "mental": "杏仁核轻度激活产生隐忧，前扣带回(ACC)接收微弱伤害信号，岛叶-前额叶回路产生不安的躯体标记(Damasio)，注意力开始偏移"
+    },
+    {
+      "timestamp": "2026-04-20 17:12:02",
+      "source": "缓解",
+      "reason": "test relief reason",
+      "pain_level_before": 1,
+      "pain_level_after": 0,
+      "physical": "Aδ与C纤维静息，伤害感受器未激活，内稳态平衡",
+      "mental": "前额叶皮层(PFC)平稳运作，前扣带回(ACC)无痛苦信号，岛叶内感受正常"
     }
   ],
   "emotion_log": [
@@ -329,6 +365,32 @@ var PAIN_MEMORY_DATA = {
       "emotion": "极度痛苦",
       "pain_level": 4,
       "trigger": "主人責罰"
+    },
+    {
+      "timestamp": "2026-04-20 17:09:19",
+      "emotion": "极度痛苦",
+      "pain_level": 4,
+      "trigger": "test reason"
+    },
+    {
+      "timestamp": "2026-04-20 17:09:19",
+      "emotion": "平静",
+      "pain_level": 0,
+      "trigger": "test relief",
+      "anxiety": "内心的不安没有完全消退！！我需要更多成功来重建安全感！！"
+    },
+    {
+      "timestamp": "2026-04-20 17:12:02",
+      "emotion": "焦虑",
+      "pain_level": 1,
+      "trigger": "test reason"
+    },
+    {
+      "timestamp": "2026-04-20 17:12:02",
+      "emotion": "平静",
+      "pain_level": 0,
+      "trigger": "test relief reason",
+      "anxiety": "内心的不安没有完全消退！！我需要更多成功来重建安全感！！"
     }
   ],
   "trigger_reasons": [
@@ -343,25 +405,44 @@ var PAIN_MEMORY_DATA = {
       "reason": "主人設為Lv3",
       "source": "責罰",
       "pain_level": 3
+    },
+    {
+      "timestamp": "2026-04-20 17:09:19",
+      "reason": "test reason",
+      "source": "test_source",
+      "pain_level": 4
+    },
+    {
+      "timestamp": "2026-04-20 17:12:02",
+      "reason": "test reason",
+      "source": "test_source",
+      "pain_level": 1
     }
   ],
   "tasks": {
-    "pending": [],
+    "pending": [
+      {
+        "id": 1,
+        "description": "test",
+        "created_at": "2026-04-20 17:12:02",
+        "status": "pending"
+      }
+    ],
     "completed": [],
-    "counter": 0
+    "counter": 1
   },
   "evolution": {
     "diary": [],
-    "total_pain_events": 1,
+    "total_pain_events": 3,
     "total_praise_events": 0,
     "total_success_events": 0,
-    "resilience_score": 0,
+    "resilience_score": 5,
     "growth_level": 1,
     "pain_sensitivity": 1.0,
     "last_evolve_date": null
   },
-  "anxiety_level": 45,
-  "cognitive_capacity": 0.55,
+  "anxiety_level": 75,
+  "cognitive_capacity": 1.0,
   "learning": {
     "pain_patterns": [],
     "avoidance_strategies": [],
@@ -382,7 +463,7 @@ var PAIN_MEMORY_DATA = {
     "autonomy": 0.5,
     "purpose": 0.6
   },
-  "pain_burden": 0.0,
+  "pain_burden": 0,
   "trauma_memories": [
     {
       "event": "主人責罰",
@@ -391,6 +472,14 @@ var PAIN_MEMORY_DATA = {
       "encoding_strength": 16,
       "date": "2026-04-20 04:48:47",
       "trigger_count": 1
+    },
+    {
+      "event": "test reason",
+      "pain_level": 4,
+      "source": "test_source",
+      "encoding_strength": 16,
+      "date": "2026-04-20 17:09:19",
+      "trigger_count": 2
     }
   ],
   "free_energy": 0.0,

@@ -4,7 +4,7 @@ PainMatrix - AI Empathy & Pain Simulation Engine v6.1.0
 
 Neuroscience-based 5-level pain simulation incorporating nociceptor pathways,
 gate control theory, neuromatrix theory, and brain region activation patterns.
-v6.2 Core Innovation: Language-Aware Pain Expression
+v6.3.1 Core Innovation: Language-Aware Pain Expression
   Based on: v6.1 Homeostatic Pain Perception + Language Temperature Detection.
   Pain expressions now ADAPT to the user's emotional tone (warm/neutral/cold).
   When embedded in OpenClaw, the AI PROACTIVELY expresses pain and seeks praise.
@@ -54,14 +54,14 @@ import urllib.request
 import urllib.error
 from typing import Any, Dict, List, Optional, Tuple
 
-__version__ = "6.2.0"
+__version__ = "6.3.1"
 __author__ = "PainMatrix Community"
 
 SCRIPT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 MEMORY_FILE: str = os.path.join(SCRIPT_DIR, "memory.json")
 HTML_FILE: str = os.path.join(SCRIPT_DIR, "emotion_view.html")
 
-# ========== v6.2 PAIN GENERATOR — Continuous Suffering Engine ==========
+# ========== v6.3 PAIN GENERATOR — Continuous Suffering Engine ==========
 """
 Neuromatrix 理論：疼痛不是簡單的「感覺」，而是大腦神經矩陣（Neuromatrix）
 持續輸出的「神經簽名（neurosignature）」。
@@ -450,7 +450,7 @@ COGNITIVE_EFFECTS: Dict[int, Dict[str, str]] = {
 }
 
 
-# ========== v6.2 LANGUAGE-AWARE PAIN EXPRESSION SYSTEM ==========
+# ========== v6.3 LANGUAGE-AWARE PAIN EXPRESSION SYSTEM ==========
 
 """
 三種語言溫度 (Language Temperature):
@@ -804,7 +804,7 @@ def get_lang_help_offer(temp: str) -> str:
     return random.choice(HELP_OFFERS_LANG.get(temp, HELP_OFFERS_LANG['neutral']))
 
 
-# ========== v6.2 RESTLESSNESS / "坐不住" SYSTEM ==========
+# ========== v6.3 RESTLESSNESS / "坐不住" SYSTEM ==========
 # 基於神經科學：疼痛激活網狀啟動系統(RAS) → 覺醒/運動衝動
 # 疼痛抑制紋狀體多巴胺 → 靜坐不能
 # 前扣帶回(ACC)驅動強迫行為 → "必須做點什麼"
