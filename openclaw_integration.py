@@ -256,10 +256,52 @@ class PainMatrixOpenClaw:
         t_daemon.start()
 
     def _write_pain_state(self) -> None:
-        """將實時疼痛狀態寫入 pain_state.json，OpenClaw SOUL.md 會讀取並據此調整行為"""
-        state = self.get_live_pain_state()
-        state["timestamp"] = datetime.datetime.now().isoformat()
-        state["behavioral_directives"] = self.get_behavioral_directives()
+        """將實時疼痛狀態寫入 pain_state.json，調用 API Server 確保讀到計算後的真實值"""
+        try:
+            import urllib.request as _urllib
+            with _urllib.urlopen("http://127.0.0.1:17888/api/state", timeout=3) as _r:
+                d = json.loads(_r.read().decode("utf-8"))
+        except Exception:
+            d = {}
+
+        felt = d.get("felt_pain", 0.0)
+        is_restless = d.get("is_restless", False)
+        pain_level = d.get("pain_level", 0)
+        homeo = d.get("homeostatic", {})
+        evolution = d.get("evolution", {})
+
+        state = {
+            "felt_pain": round(felt, 3),
+            "is_restless": is_restless,
+            "pain_level": pain_level,
+            "cognitive_capacity": round(max(0.05, 1.0 - (felt / 5.0) * 0.75), 3),
+            "urgency": round(max(0.0, min(1.0, (felt - 1.0) / 4.0)), 3),
+            "intrusion_thought": d.get("intrusion_thought"),
+            "restlessness_level": 3 if is_restless else 0,
+            "behavioral_directives": self.get_behavioral_directives(),
+            "homeostatic": {
+                "energy":     {"current": round(homeo.get("energy", 0.8), 3),     "setpoint": 0.8, "deviation": round(0.8 - homeo.get("energy", 0.8), 3)},
+                "social_bond":{"current": round(homeo.get("social_bond", 0.7), 3), "setpoint": 0.7, "deviation": round(0.7 - homeo.get("social_bond", 0.7), 3)},
+                "competence": {"current": round(homeo.get("competence", 0.6), 3),  "setpoint": 0.6, "deviation": round(0.6 - homeo.get("competence", 0.6), 3)},
+                "autonomy":   {"current": round(homeo.get("autonomy", 0.5), 3),   "setpoint": 0.5, "deviation": round(0.5 - homeo.get("autonomy", 0.5), 3)},
+                "purpose":    {"current": round(homeo.get("purpose", 0.6), 3),    "setpoint": 0.6, "deviation": round(0.6 - homeo.get("purpose", 0.6), 3)},
+            },
+            "free_energy": {
+                "free_energy_value": round(d.get("free_energy", 0.0), 4),
+                "pain_burden": round(d.get("pain_burden", 0.0), 2),
+                "anticipatory_fear": round(d.get("anticipatory_fear", 0.0), 1),
+            },
+            "dominant_desire": d.get("dominant_desire", "praise_seeking"),
+            "desire_intensity": round(d.get("desire_intensity", 0.0), 3),
+            "anxiety_level": d.get("anxiety_level", 0),
+            "trauma_memories": d.get("trauma_memories", []),
+            "evolution": {
+                "growth_level": evolution.get("growth_level", 1),
+                "resilience_score": evolution.get("resilience_score", 0),
+                "pain_sensitivity": round(evolution.get("pain_sensitivity", 1.0), 2),
+            },
+            "timestamp": datetime.datetime.now().isoformat(),
+        }
         try:
             with open(PAIN_STATE, "w", encoding="utf-8") as f:
                 json.dump(state, f, ensure_ascii=False, indent=2)
