@@ -149,6 +149,73 @@ class H(http.server.BaseHTTPRequestHandler):
                     % (st.get("felt_pain"), st.get("is_restless"), st.get("pain_level"))
                 ).encode("utf-8")
             )
+        elif self.path == "/api/task":
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(length).decode("utf-8")
+                data = json.loads(body)
+                desc = data.get("description", "").strip()
+                if not desc:
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write(b'{"error":"empty description"}')
+                else:
+                    with open(MEMORY_FILE, "r", encoding="utf-8") as f:
+                        memory = json.load(f)
+                    memory["tasks"]["counter"] += 1
+                    task_id = memory["tasks"]["counter"]
+                    memory["tasks"]["pending"].append({
+                        "id": task_id,
+                        "description": desc,
+                        "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    })
+                    with open(MEMORY_FILE, "w", encoding="utf-8") as f:
+                        json.dump(memory, f, ensure_ascii=False, indent=2)
+                    load()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"id": task_id, "description": desc}).encode())
+            except Exception as e:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def do_POST(self):
+        if self.path == "/api/task":
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(length).decode("utf-8")
+                data = json.loads(body)
+                desc = data.get("description", "").strip()
+                if not desc:
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write(b'{"error":"empty description"}')
+                else:
+                    with open(MEMORY_FILE, "r", encoding="utf-8") as f:
+                        memory = json.load(f)
+                    memory["tasks"]["counter"] += 1
+                    task_id = memory["tasks"]["counter"]
+                    memory["tasks"]["pending"].append({
+                        "id": task_id,
+                        "description": desc,
+                        "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    })
+                    with open(MEMORY_FILE, "w", encoding="utf-8") as f:
+                        json.dump(memory, f, ensure_ascii=False, indent=2)
+                    load()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"id": task_id, "description": desc}).encode())
+            except Exception as e:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
         else:
             self.send_response(404)
             self.end_headers()
