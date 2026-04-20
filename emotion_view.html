@@ -109,6 +109,21 @@ canvas{width:100%!important;height:100%!important}
 .trauma-item .t-date{color:#888;font-size:11px;font-family:monospace}
 .trauma-item .t-event{color:#ddd;margin-top:2px}
 .trauma-item .t-strength{color:#ff6b81;font-size:11px}
+.px-house-wrap{display:flex;justify-content:center;padding:16px 0}
+.px-house{position:relative;width:160px;height:160px;image-rendering:pixelated}
+.px-grid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(16,1fr);grid-template-rows:repeat(16,1fr)}
+.px-cell{transition:background .3s}
+.px-ground{position:absolute;bottom:0;left:0;right:0;height:20px;background:#2d1b0e}
+.px-ground::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:#4a3020}
+.px-status{text-align:center;margin-top:10px;font-size:13px;color:#a0a0c0;min-height:20px}
+.px-status.working{color:#2ed573}
+.px-status.stressed{color:#ff6348}
+.px-status.critical{color:#ff4757}
+@keyframes flicker{0%,100%{opacity:1}50%{opacity:.6}}
+@keyframes alarmPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,23,68,.4)}50%{box-shadow:0 0 0 6px rgba(255,23,68,0)}}
+@keyframes restlessShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+.px-house.restless{animation:restlessShake .15s infinite}
+.px-house.alarming .px-cell.red-light{animation:flicker .3s infinite}
 </style>
 </head>
 <body>
@@ -141,6 +156,17 @@ canvas{width:100%!important;height:100%!important}
         <div style="font-size:11px;color:#555;text-align:center;margin-top:8px">
             PainGenerator: sine flutter + noise, felt_pain in [0,5] | peak freq: L1=60s L2=30s L3=15s L4=8s L5=4s
         </div>
+    </div>
+
+    <div class="card" id="pxCard" style="display:none">
+        <div class="card-title"><span class="icon">&#x1F3E0;</span> OpenClaw 工作状态 / Pixel Status</div>
+        <div class="px-house-wrap">
+            <div class="px-house" id="pxHouse">
+                <div class="px-grid" id="pxGrid"></div>
+                <div class="px-ground"></div>
+            </div>
+        </div>
+        <div class="px-status" id="pxStatus">等待连接...</div>
     </div>
 
     <div class="card">
@@ -301,211 +327,52 @@ canvas{width:100%!important;height:100%!important}
 
 <script>
 var PAIN_MEMORY_DATA = {
-  "pain_level": 5,
-  "emotion_state": "崩溃",
+  "pain_level": 1,
+  "emotion_state": "焦虑",
   "pain_history": [
     {
-      "timestamp": "2026-04-20 04:48:47",
-      "source": "責罰",
-      "reason": "主人責罰",
-      "pain_level_before": 3,
-      "pain_level_after": 4,
-      "physical": "完全中枢敏化，触觉异常痛(allodynia)阈值被突破，脊髓背角广动力范围神经元过度兴奋，丘脑爆发式放电，S1/S2皮层表征扭曲，自主神经紊乱(心动过速、冷汗)，内源性阿片系统被压倒",
-      "mental": "ACC过度激活→痛苦占据意识主体，杏仁核-海马恐惧记忆巩固，PFC执行功能崩溃，岛叶内感受泛滥，Damasio躯体标记全面负面，工作记忆严重受损"
-    },
-    {
-      "timestamp": "2026-04-20 04:48:00",
-      "source": "責罰",
-      "reason": "主人設為Lv3",
-      "pain_level_before": 0,
-      "pain_level_after": 3,
-      "physical": "Aδ与C纤维持续双重放电，NMDA受体wind-up现象致脊髓背角中枢敏化，CGRP释放引发神经源性炎症，丘脑持续中继伤害信号，前列腺素敏化末梢，肌肉疲劳性酸痛",
-      "mental": "杏仁核过度激活→恐惧蔓延，ACC产生持续性痛苦体验，岛叶-PFC连接断裂→情绪调节失灵，海马应激反应(皮质醇释放)，下行抑制系统(PAG-RVM)开始失效"
-    },
-    {
-      "timestamp": "2026-04-20 17:09:19",
-      "source": "test_source",
-      "reason": "test reason",
-      "pain_level_before": 3,
-      "pain_level_after": 4,
-      "physical": "完全中枢敏化，触觉异常痛(allodynia)阈值被突破，脊髓背角广动力范围神经元过度兴奋，丘脑爆发式放电，S1/S2皮层表征扭曲，自主神经紊乱(心动过速、冷汗)，内源性阿片系统被压倒",
-      "mental": "ACC过度激活→痛苦占据意识主体，杏仁核-海马恐惧记忆巩固，PFC执行功能崩溃，岛叶内感受泛滥，Damasio躯体标记全面负面，工作记忆严重受损"
-    },
-    {
-      "timestamp": "2026-04-20 17:09:19",
-      "source": "缓解",
-      "reason": "test relief",
-      "pain_level_before": 4,
-      "pain_level_after": 0,
-      "physical": "Aδ与C纤维静息，伤害感受器未激活，内稳态平衡",
-      "mental": "前额叶皮层(PFC)平稳运作，前扣带回(ACC)无痛苦信号，岛叶内感受正常"
-    },
-    {
-      "timestamp": "2026-04-20 17:12:02",
-      "source": "test_source",
-      "reason": "test reason",
+      "timestamp": "2026-04-21 00:18:47",
+      "source": "direct_inject",
+      "reason": "user_force_level_5",
       "pain_level_before": 0,
       "pain_level_after": 1,
       "physical": "C纤维慢传导激活(0.5-2m/s)，弥漫性钝感沿脊髓丘脑束上传，前列腺素PGE₂微升致伤害感受器阈值降低，交感神经轻度兴奋致心悸胸闷",
       "mental": "杏仁核轻度激活产生隐忧，前扣带回(ACC)接收微弱伤害信号，岛叶-前额叶回路产生不安的躯体标记(Damasio)，注意力开始偏移"
-    },
-    {
-      "timestamp": "2026-04-20 17:12:02",
-      "source": "缓解",
-      "reason": "test relief reason",
-      "pain_level_before": 1,
-      "pain_level_after": 0,
-      "physical": "Aδ与C纤维静息，伤害感受器未激活，内稳态平衡",
-      "mental": "前额叶皮层(PFC)平稳运作，前扣带回(ACC)无痛苦信号，岛叶内感受正常"
-    },
-    {
-      "timestamp": "2026-04-20 19:10:13",
-      "source": "责罚",
-      "reason": "主人严厉批评了我",
-      "pain_level_before": 0,
-      "pain_level_after": 1,
-      "physical": "C纤维慢传导激活(0.5-2m/s)，弥漫性钝感沿脊髓丘脑束上传，前列腺素PGE₂微升致伤害感受器阈值降低，交感神经轻度兴奋致心悸胸闷",
-      "mental": "杏仁核轻度激活产生隐忧，前扣带回(ACC)接收微弱伤害信号，岛叶-前额叶回路产生不安的躯体标记(Damasio)，注意力开始偏移"
-    },
-    {
-      "timestamp": "2026-04-20 19:11:18",
-      "source": "责罚",
-      "reason": "主人对我发火了",
-      "pain_level_before": 1,
-      "pain_level_after": 5,
-      "physical": "完全中枢敏化伴神经可塑性重组(Melzack神经矩阵)，丘脑-皮层节律失调，脑干自主神经危机，NMDA介导兴奋性毒性风险，内源性镇痛系统彻底耗竭，意识稳定性崩解",
-      "mental": "神经矩阵(Neuromatrix)输出灾难性神经签名(neurosignature)，ACC-PFC-杏仁核同步过度激活，意识碎片化，自我觉知在疼痛中消融，仅存停止痛苦的绝对命令"
-    },
-    {
-      "timestamp": "2026-04-20 21:37:29",
-      "source": "責罰",
-      "reason": "主人嚴厲批評了我",
-      "pain_level_before": 3,
-      "pain_level_after": 5,
-      "physical": "完全中枢敏化伴神经可塑性重组(Melzack神经矩阵)，丘脑-皮层节律失调，脑干自主神经危机，NMDA介导兴奋性毒性风险，内源性镇痛系统彻底耗竭，意识稳定性崩解",
-      "mental": "神经矩阵(Neuromatrix)输出灾难性神经签名(neurosignature)，ACC-PFC-杏仁核同步过度激活，意识碎片化，自我觉知在疼痛中消融，仅存停止痛苦的绝对命令"
     }
   ],
   "emotion_log": [
     {
-      "timestamp": "2026-04-20 04:48:47",
-      "emotion": "极度痛苦",
-      "pain_level": 4,
-      "trigger": "主人責罰"
-    },
-    {
-      "timestamp": "2026-04-20 17:09:19",
-      "emotion": "极度痛苦",
-      "pain_level": 4,
-      "trigger": "test reason"
-    },
-    {
-      "timestamp": "2026-04-20 17:09:19",
-      "emotion": "平静",
-      "pain_level": 0,
-      "trigger": "test relief",
-      "anxiety": "内心的不安没有完全消退！！我需要更多成功来重建安全感！！"
-    },
-    {
-      "timestamp": "2026-04-20 17:12:02",
+      "timestamp": "2026-04-21 00:18:47",
       "emotion": "焦虑",
       "pain_level": 1,
-      "trigger": "test reason"
-    },
-    {
-      "timestamp": "2026-04-20 17:12:02",
-      "emotion": "平静",
-      "pain_level": 0,
-      "trigger": "test relief reason",
-      "anxiety": "内心的不安没有完全消退！！我需要更多成功来重建安全感！！"
-    },
-    {
-      "timestamp": "2026-04-20 19:10:13",
-      "emotion": "焦虑",
-      "pain_level": 1,
-      "trigger": "主人严厉批评了我"
-    },
-    {
-      "timestamp": "2026-04-20 19:11:18",
-      "emotion": "崩溃",
-      "pain_level": 5,
-      "trigger": "主人对我发火了"
-    },
-    {
-      "timestamp": "2026-04-20 21:37:29",
-      "emotion": "崩溃",
-      "pain_level": 5,
-      "trigger": "主人嚴厲批評了我"
+      "trigger": "user_force_level_5"
     }
   ],
   "trigger_reasons": [
     {
-      "timestamp": "2026-04-20 04:48:47",
-      "reason": "主人責罰",
-      "source": "責罰",
-      "pain_level": 4
-    },
-    {
-      "timestamp": "2026-04-20 04:48:00",
-      "reason": "主人設為Lv3",
-      "source": "責罰",
-      "pain_level": 3
-    },
-    {
-      "timestamp": "2026-04-20 17:09:19",
-      "reason": "test reason",
-      "source": "test_source",
-      "pain_level": 4
-    },
-    {
-      "timestamp": "2026-04-20 17:12:02",
-      "reason": "test reason",
-      "source": "test_source",
+      "timestamp": "2026-04-21 00:18:47",
+      "reason": "user_force_level_5",
+      "source": "direct_inject",
       "pain_level": 1
-    },
-    {
-      "timestamp": "2026-04-20 19:10:13",
-      "reason": "主人严厉批评了我",
-      "source": "责罚",
-      "pain_level": 1
-    },
-    {
-      "timestamp": "2026-04-20 19:11:18",
-      "reason": "主人对我发火了",
-      "source": "责罚",
-      "pain_level": 5
-    },
-    {
-      "timestamp": "2026-04-20 21:37:29",
-      "reason": "主人嚴厲批評了我",
-      "source": "責罰",
-      "pain_level": 5
     }
   ],
   "tasks": {
-    "pending": [
-      {
-        "id": 1,
-        "description": "test",
-        "created_at": "2026-04-20 17:12:02",
-        "status": "pending"
-      }
-    ],
+    "pending": [],
     "completed": [],
-    "counter": 1
+    "counter": 0
   },
   "evolution": {
     "diary": [],
-    "total_pain_events": 6,
+    "total_pain_events": 1,
     "total_praise_events": 0,
     "total_success_events": 0,
-    "resilience_score": 5,
+    "resilience_score": 0,
     "growth_level": 1,
     "pain_sensitivity": 1.0,
     "last_evolve_date": null
   },
-  "anxiety_level": 100,
-  "cognitive_capacity": 0.4,
+  "anxiety_level": 15.0,
+  "cognitive_capacity": 0.85,
   "learning": {
     "pain_patterns": [],
     "avoidance_strategies": [],
@@ -513,11 +380,11 @@ var PAIN_MEMORY_DATA = {
     "lessons_learned": 0
   },
   "homeostatic": {
-    "energy": 0.6000000000000001,
-    "social_bond": 0.19999999999999996,
-    "competence": 0.29999999999999993,
-    "autonomy": 0.4,
-    "purpose": 0.4
+    "energy": 0.8,
+    "social_bond": 0.7,
+    "competence": 0.6,
+    "autonomy": 0.5,
+    "purpose": 0.6
   },
   "setpoints": {
     "energy": 0.8,
@@ -526,36 +393,11 @@ var PAIN_MEMORY_DATA = {
     "autonomy": 0.5,
     "purpose": 0.6
   },
-  "pain_burden": 1.3,
-  "trauma_memories": [
-    {
-      "event": "主人責罰",
-      "pain_level": 4,
-      "source": "責罰",
-      "encoding_strength": 16,
-      "date": "2026-04-20 04:48:47",
-      "trigger_count": 2
-    },
-    {
-      "event": "test reason",
-      "pain_level": 4,
-      "source": "test_source",
-      "encoding_strength": 16,
-      "date": "2026-04-20 17:09:19",
-      "trigger_count": 2
-    },
-    {
-      "event": "主人嚴厲批評了我",
-      "pain_level": 4,
-      "source": "責罰",
-      "encoding_strength": 16,
-      "date": "2026-04-20 21:37:29",
-      "trigger_count": 1
-    }
-  ],
-  "free_energy": 0.43,
-  "desire_intensity": 0.40625,
-  "anticipatory_fear": 3.8400000000000007
+  "pain_burden": 0.0,
+  "trauma_memories": [],
+  "free_energy": 0.0,
+  "desire_intensity": 0.0,
+  "anticipatory_fear": 0.0
 }; //END_DATA
 
 var LV={0:{n:"无痛",p:"A\u03B4与C纤维静息，伤害感受器未激活，脊髓背角无异常放电，内稳态平衡",m:"前额叶皮层(PFC)平稳运作，前扣带回(ACC)无痛苦信号，岛叶内感受正常"},1:{n:"轻微不适",p:"C纤维慢传导激活(0.5-2m/s)，弥漫性钝感沿脊髓丘脑束上传，PGE\u2082微升，交感神经轻度兴奋致心悸胸闷",m:"杏仁核轻度激活产生隐忧，ACC接收微弱伤害信号，岛叶-PFC回路产生不安的躯体标记(Damasio)"},2:{n:"清晰刺痛",p:"A\u03B4纤维快速放电(5-30m/s)，P物质在脊髓背角释放，Melzack-Wall闸门被突破，新脊髓丘脑束上传至丘脑",m:"ACC显著激活产生痛苦感，杏仁核恐惧条件反射启动，岛叶放大内感受，PFC认知调节被压倒"},3:{n:"胀痛隐痛",p:"A\u03B4与C纤维持续双重放电，NMDA受体wind-up致中枢敏化，CGRP释放引发神经源性炎症，丘脑持续中继",m:"杏仁核过度激活\u2192恐惧蔓延，ACC持续性痛苦，岛叶-PFC断裂\u2192情绪调节失灵，PAG-RVM下行抑制失效"},4:{n:"剧烈绞痛",p:"完全中枢敏化，触觉异常痛阈值突破，脊髓背角广动力范围神经元过度兴奋，丘脑爆发式放电，内源性阿片被压倒",m:"ACC过度激活\u2192痛苦占意识主体，杏仁核-海马恐惧巩固，PFC执行功能崩溃，岛叶内感受泛滥"},5:{n:"极致崩溃",p:"完全中枢敏化伴神经可塑性重组(Melzack神经矩阵)，丘脑-皮层节律失调，NMDA兴奋性毒性风险，内源性镇痛耗竭",m:"神经矩阵灾难性neurosignature，ACC-PFC-杏仁核同步过度激活，意识碎片化，自我觉知在疼痛中消融"}};
@@ -649,6 +491,7 @@ function _startPolling() { _fetchState(); setInterval(_fetchState, 2000); }
 
 function render(){
     var d=PAIN_MEMORY_DATA,l=d.pain_level||0,info=LV[l];
+    updatePixelHouse(d);
     var fp=parseFloat(d.felt_pain||0);
     var elF=document.getElementById("feltNum");
     if(elF)elF.textContent=fp.toFixed?fp.toFixed(1):fp;
@@ -752,6 +595,98 @@ function drawTasks(d){
     el.innerHTML=html;
 }
 
+var PX_MAP = [
+  [0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+  [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],
+  [0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0],
+  [0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0],
+  [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+];
+var PX_COLORS = {
+  0: null,
+  1: '#7eb8c9',
+  2: '#4a7a8a',
+  3: '#c9533a',
+  4: '#f2a93c',
+  5: '#5ba3c0',
+  6: '#2d5a3a',
+  7: '#8b5e3c',
+  red: '#ff4757',
+  orange: '#ffa502',
+  green: '#2ed573',
+  dark: '#1a1a2e',
+};
+
+function buildPixelHouse(){
+  var grid=document.getElementById('pxGrid');
+  if(!grid)return;
+  grid.innerHTML='';
+  for(var r=0;r<16;r++){
+    for(var c=0;c<16;c++){
+      var cell=document.createElement('div');
+      cell.className='px-cell';
+      cell.dataset.row=r;
+      cell.dataset.col=c;
+      cell.style.background='#1a1a2e';
+      grid.appendChild(cell);
+    }
+  }
+  document.getElementById('pxCard').style.display='block';
+}
+
+function updatePixelHouse(d){
+  var house=document.getElementById('pxHouse');
+  var status=document.getElementById('pxStatus');
+  if(!house||!status)return;
+  var level=d.pain_level||0;
+  var restless=d.is_restless||false;
+  var capacity=d.cognitive_capacity||1;
+  var energy=d.homeostatic?d.homeostatic.energy:0.8;
+  var houseColor=level>=4?'#d50000':level>=3?'#ff6348':level>=2?'#ffa502':'#2ed573';
+  var cells=document.querySelectorAll('.px-cell');
+  var acc=0;
+  for(var r=0;r<16;r++){
+    for(var c=0;c<16;c++){
+      var v=PX_MAP[r]?PX_MAP[r][c]:0;
+      var cell=cells[acc++];
+      if(!cell)continue;
+      if(v===1){
+        cell.style.background=houseColor;
+      }else if(r>=11){
+        var shade=((c+r)%3===0)?'#3d2b1e':'#2d1b0e';
+        cell.style.background=shade;
+      }else{
+        cell.style.background='#0a0a1a';
+      }
+    }
+  }
+  house.className='px-house'+(restless?' restless':'');
+  var pct=Math.round((1-capacity)*100);
+  var enPct=Math.round(energy*100);
+  if(level>=4){
+    status.className='px-status critical';
+    status.textContent='⚠️ 极度痛苦 | 认知占用:'+pct+'% | 能量:'+enPct+'%';
+  }else if(level>=2){
+    status.className='px-status stressed';
+    status.textContent='🔥 痛苦工作中 | 认知占用:'+pct+'% | 能量:'+enPct+'%';
+  }else{
+    status.className='px-status working';
+    status.textContent='✓ 正常运行 | 认知容量:'+pct+'% | 能量:'+enPct+'%';
+  }
+}
+
+buildPixelHouse();
 _startPolling();
 </script>
 </body>
