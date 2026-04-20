@@ -922,26 +922,72 @@ function tryChangeRoom(){
 // ═══ UPDATE CHARACTER ═══
 function updateChar(){
   char.frame++;char.activityTimer++;
+  let pl=gameState.painLevel;
+  
+  // ── Pain-based walk speed (slower is better) ──
+  if(pl>=4)char.walkSpeed=0.08;
+  else if(pl>=3)char.walkSpeed=0.15;
+  else if(pl>=2)char.walkSpeed=0.2;
+  else if(pl>=1)char.walkSpeed=0.25;
+  else char.walkSpeed=0.3; // normal = slow
+
   if(char.isMoving&&char.walkTarget){
     let dx=char.walkTarget.x-char.x,dy=char.walkTarget.y-char.y,dist=Math.sqrt(dx*dx+dy*dy);
     if(dist<1){
-      if(char.walkTarget.targetRoom)char.currentRoom=char.walkTarget.targetRoom;
+      if(char.walkTarget.targetRoom){
+        char.currentRoom=char.walkTarget.targetRoom;
+      }
       char.isMoving=false;char.x=char.walkTarget.x;char.y=char.walkTarget.y;char.walkTarget=null;
-      char.activityDef=pickNextActivity(gameState.painLevel,char.currentRoom);
+      char.activityDef=pickNextActivity(pl,char.currentRoom);
       char.activity=char.activityDef.pose;char.activityTimer=0;
     }else{
-      char.x+=(dx/dist)*char.walkSpeed;char.y+=(dy/dist)*char.walkSpeed;
+      // Move in small steps with collision check at each step
+      let step=char.walkSpeed;
+      let nx=char.x+(dx/dist)*step;
+      let ny=char.y+(dy/dist)*step;
+      
+      // ── Room boundary clamp ──
+      let clamped=clamp(nx,ny,char.currentRoom);
+      nx=clamped.x;ny=clamped.y;
+      
+      // ── Furniture collision check ──
+      // Try X movement first
+      let cx=char.x+(dx/dist)*step;
+      let cy=char.y;
+      let cClamped=clamp(cx,cy,char.currentRoom);
+      cx=cClamped.x;cy=cClamped.y;
+      let hitFurn=collides(cx,cy,char.currentRoom);
+      if(!hitFurn){
+        char.x=cx;char.y=cy;
+      }else{
+        // Blocked by furniture - try Y movement only
+        cx=char.x;
+        cy=char.y+(dy/dist)*step;
+        cClamped=clamp(cx,cy,char.currentRoom);
+        cx=cClamped.x;cy=cClamped.y;
+        hitFurn=collides(cx,cy,char.currentRoom);
+        if(!hitFurn){
+          char.x=cx;char.y=cy;
+        }else{
+          // Both blocked - give up this step, stop
+          char.isMoving=false;
+          char.x=clamp(char.x,char.y,char.currentRoom).x;
+          char.y=clamp(char.x,char.y,char.currentRoom).y;
+          char.activityDef=pickNextActivity(pl,char.currentRoom);
+          char.activity=char.activityDef.pose;char.activityTimer=0;
+        }
+      }
       char.facing=dx>0?1:-1;
     }
   }else{
     if(char.activityDef&&char.activityTimer>char.activityDef.dur){
-      if(Math.random()<0.25)tryChangeRoom();
-      else{char.activityDef=pickNextActivity(gameState.painLevel,char.currentRoom);char.activity=char.activityDef.pose;char.activityTimer=0;}
+      if(Math.random()<0.2)tryChangeRoom();
+      else{char.activityDef=pickNextActivity(pl,char.currentRoom);char.activity=char.activityDef.pose;char.activityTimer=0;}
     }
   }
-  let pl=gameState.painLevel;
-  if(pl>=4&&char.isMoving)char.walkSpeed=0.15;else if(pl>=3&&char.isMoving)char.walkSpeed=0.25;else if(pl>=2&&char.isMoving)char.walkSpeed=0.3;else char.walkSpeed=0.4;
-  if(pl>=4&&!char.isMoving&&Math.random()<0.02){
+  
+  // High pain: collapse/low-activity poses
+  if(pl>=4&&!char.isMoving&&Math.random()<0.015){
     let hp=ACTIVITIES.filter(a=>a.minPL>=4&&(a.room===char.currentRoom||a.room==='any'));
     if(hp.length>0){let a=hp[Math.floor(Math.random()*hp.length)];char.activityDef=a;char.activity=a.pose;char.activityTimer=0;}
   }
