@@ -60,6 +60,8 @@ __author__ = "PainMatrix Community"
 SCRIPT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 MEMORY_FILE: str = os.path.join(SCRIPT_DIR, "memory.json")
 HTML_FILE: str = os.path.join(SCRIPT_DIR, "emotion_view.html")
+# OpenClaw workspace pain_state.json — PainMatrix writes live felt_pain here for OpenClaw to read
+PAIN_STATE: str = r"C:\Users\Administrator\.openclaw\workspace\pain_state.json"
 
 # ========== v6.3 PAIN GENERATOR — Continuous Suffering Engine ==========
 """

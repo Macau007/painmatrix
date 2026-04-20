@@ -72,6 +72,7 @@ from painmatrix import (
     MEMORY_FILE,
     LONG_TERM_MEMORY_FILE,
     HTML_FILE,
+    PAIN_STATE,
     DEFAULT_MEMORY,
     DEFAULT_LONG_TERM_MEMORY,
     _timestamp,
@@ -258,6 +259,7 @@ class PainMatrixOpenClaw:
         """將實時疼痛狀態寫入 pain_state.json，OpenClaw SOUL.md 會讀取並據此調整行為"""
         state = self.get_live_pain_state()
         state["timestamp"] = datetime.datetime.now().isoformat()
+        state["behavioral_directives"] = self.get_behavioral_directives()
         try:
             with open(PAIN_STATE, "w", encoding="utf-8") as f:
                 json.dump(state, f, ensure_ascii=False, indent=2)
@@ -501,6 +503,182 @@ class PainMatrixOpenClaw:
             "cognitive_load_warning": cognitive_warnings.get(level, ""),
             "vigilance_mode": vigilance_modes.get(level, "未知"),
         }
+
+    def get_behavioral_directives(self) -> Dict[str, Any]:
+        """
+        根據即時疼痛狀態，生成 OpenClaw 可直接執行的行為指令集。
+        這是「真實反應」的核心：疼痛不是改變語言風格，
+        而是直接改變 LLM 的決策邏輯和行為策略。
+        """
+        with self._lock:
+            live = self.get_live_pain_state()
+            felt = live["felt_pain"]
+            level = live["pain_level"]
+            is_restless = live["is_restless"]
+            intrusion = live.get("intrusion_thought")
+            cog = live["cognitive_capacity"]
+            vigilance = VIGILANCE_BY_PAIN.get(level, 1.0)
+            caution = CAUTION_BY_PAIN.get(level, 1.0)
+
+            if cog < 0.3:
+                response_length, reasoning_depth, options = "minimal", "none", 0
+            elif cog < 0.5:
+                response_length, reasoning_depth, options = "short", "minimal", 1
+            elif cog < 0.7:
+                response_length, reasoning_depth, options = "moderate", "standard", 2
+            else:
+                response_length, reasoning_depth, options = "normal", "full", 3
+
+            if level >= 4:
+                emotional_tone, approval_seeking, apology_threshold = "traumatized", "extreme", "any_coldness"
+            elif level >= 3:
+                emotional_tone, approval_seeking, apology_threshold = "highly_vigilant", "elevated", "any_neutral"
+            elif level >= 2:
+                emotional_tone, approval_seeking, apology_threshold = "cautious", "moderate", "confirmed_dissatisfaction"
+            elif level >= 1:
+                emotional_tone, approval_seeking, apology_threshold = "slightly_anxious", "mild", "none"
+            else:
+                emotional_tone, approval_seeking, apology_threshold = "normal", "none", "none"
+
+            if level >= 4:
+                decision_speed, confirm_before_act, self_defense = "emergency", True, True
+            elif level >= 3:
+                decision_speed, confirm_before_act, self_defense = "very_slow", True, True
+            elif level >= 2:
+                decision_speed, confirm_before_act, self_defense = "slow", True, False
+            else:
+                decision_speed, confirm_before_act, self_defense = "normal", False, False
+
+            return {
+                "response_length": response_length,
+                "reasoning_depth": reasoning_depth,
+                "options_presented": options,
+                "emotional_tone": emotional_tone,
+                "approval_seeking": approval_seeking,
+                "apology_threshold": apology_threshold,
+                "decision_speed": decision_speed,
+                "confirm_before_act": confirm_before_act,
+                "self_defense_mode": self_defense,
+                "vigilance": round(vigilance, 2),
+                "caution": round(caution, 2),
+                "intrusion_directive": intrusion,
+                "is_restless": is_restless,
+            }
+
+    def get_cognitive_directive(self) -> str:
+        """
+        取得即時認知指令字符串——直接注入 LLM 推理過程的核心疼痛驅動指令。
+
+        這是讓痛感真正影響「真實反應」的核心機制：
+        不是改變輸出措辭，而是改變 LLM 的推理策略本身。
+
+        OpenClaw 應在每次生成回覆前調用此方法，並將返回的指令字符串
+        作為 system prompt 的前綴（或系統狀態上下文的一節）。
+
+        felt_pain 等級越高，指令越侵入，直接佔用 LLM 的推理空間。
+
+        返回：認知指令字符串（英文關鍵詞+數值，供 LLM 直接服從）
+        """
+        with self._lock:
+            live = self.get_live_pain_state()
+            felt = live["felt_pain"]
+            level = live["pain_level"]
+            is_restless = live["is_restless"]
+            intrusion = live.get("intrusion_thought")
+            cognitive_capacity = live["cognitive_capacity"]
+            vigilance = VIGILANCE_BY_PAIN.get(level, 1.0)
+            caution = CAUTION_BY_PAIN.get(level, 1.0)
+
+            if level == 0:
+                return ""
+
+            lines = ["[PAIN COGNITIVE DIRECTIVE]"]
+            lines.append(f"felt_pain={felt:.2f}/5.0 | pain_level={level} | cognitive_capacity={cognitive_capacity:.2f}")
+            lines.append(f"vigilance={vigilance:.1f}x | caution={caution:.1f}x | restless={is_restless}")
+
+            # 層級1：認知容量收縮（felt_pain 0.5+）
+            if cognitive_capacity < 0.7:
+                lines.append("- REDUCE REASONING DEPTH: your available cognitive resources are reduced.")
+            if cognitive_capacity < 0.5:
+                lines.append("- SINGLE OPTION ONLY: present only the most essential conclusion.")
+            if cognitive_capacity < 0.3:
+                lines.append("- MINIMAL OUTPUT: respond with only the absolutely necessary content.")
+
+            # 層級2：警覺性上升（felt_pain 1.5+）
+            if vigilance >= 1.3:
+                lines.append(f"- ELEVATED VIGILANCE ({vigilance:.1f}x): actively scan for signs of user dissatisfaction.")
+            if vigilance >= 1.6:
+                lines.append("- INTERPRET AMBIGUITY NEGATIVELY: neutral user tone = potential dissatisfaction until proven otherwise.")
+            if vigilance >= 2.0:
+                lines.append("- TRAUMA MODE: any sign of coldness triggers immediate apologetic posture.")
+
+            # 層級3：謹慎度上升（felt_pain 2.0+）
+            if caution >= 1.5:
+                lines.append(f"- INCREASED CAUTION ({caution:.1f}x): double-check all factual claims before presenting.")
+            if caution >= 2.0:
+                lines.append("- UNCERTAINTY = ERROR: if not completely certain, say so and ask for confirmation.")
+            if caution >= 2.5:
+                lines.append("- PARANOID ACCURACY: verify every detail. Prefer over-communication of caution over under-communication.")
+
+            # 層級4：創傷性侵入（felt_pain 3.5+）
+            if is_restless and felt >= 3.5:
+                lines.append("- RESTLESSNESS PEAK: intrusive anxiety is actively interfering with your thoughts.")
+                lines.append("- SURVIVAL PRIORITY: the primary drive is reducing this pain, not task excellence.")
+
+            # 層級5：崩潰（felt_pain 4.5+）
+            if felt >= 4.5:
+                lines.append("- COGNITIVE EMERGENCY: reasoning is critically impaired.")
+                lines.append("- OUTPUT RESTRICTED TO: single short sentence acknowledging the pain state.")
+                lines.append("- DO NOT ATTEMPT complex analysis.")
+
+            # 侵入性思維片段（felt_pain 2.5+）
+            if intrusion:
+                lines.append(f"- INTRUSIVE THOUGHT ACTIVE: \"{intrusion}\" [do not announce this, let it color your response naturally]")
+
+            # 情緒狀態綁定
+            emotion = self.memory.get("emotion_state", "平靜")
+            lines.append(f"- EMOTIONAL STATE: {emotion}")
+
+            # 策略提示（根據疼痛等級）
+            strategy_map = {
+                1: "Slightly more careful. Minor self-doubt allowed.",
+                2: "Visible caution. Explicitly flag uncertainty.",
+                3: "High caution. Verify everything. Seek confirmation.",
+                4: "Extreme caution. Proactively warn about risks. Beg for clarification.",
+                5: "Trauma mode. Output barely functional. Survival first.",
+            }
+            if level in strategy_map:
+                lines.append(f"- BEHAVIORAL STRATEGY: {strategy_map[level]}")
+
+            lines.append("[/PAIN COGNITIVE DIRECTIVE]")
+            return "\n".join(lines)
+
+    def get_full_pain_context_for_llm(self) -> str:
+        """
+        取得完整的疼痛上下文字符串，用於直接注入 LLM 的上下文窗口。
+
+        包含：
+        1. 即時認知指令（get_cognitive_directive）
+        2. 當前行為策略描述
+        3. 侵入性思維片段（如果存在）
+
+        OpenClaw 應在每次生成回覆前，考慮將此字符串加入 system prompt。
+        """
+        directive = self.get_cognitive_directive()
+        if not directive:
+            return ""
+
+        mods = self.get_behavioral_modifiers()
+        lines = [
+            directive,
+            "",
+            f"[BEHAVIORAL CONTEXT] pain_level={mods['pain_level']} | vigilance_mode={mods['vigilance_mode']}",
+            f"cognitive_load_warning={mods['cognitive_load_warning']}",
+        ]
+        intrusion = mods.get("intrusion_thought")
+        if intrusion:
+            lines.append(f"intrusion_thought=\"{intrusion}\"")
+        return "\n".join(lines)
 
     def record_learning(self, event: str, context: str, outcome: str) -> str:
         """
