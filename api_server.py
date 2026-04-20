@@ -1,113 +1,87 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-PainMatrix HTTP API Server (Standalone)
-独立进程，直接读取 memory.json，定时刷新
-Web 界面 (emotion_view.html) 通过它实现实时同步
-
-运行方式:
-    python api_server.py          # 前台运行
-    start /B python api_server.py # 后台运行
-"""
-
-import http.server
-import socketserver
-import json
-import os
-import time
-import threading
-
+import http.server, socketserver, json, os, time, threading, sys
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MEMORY_FILE = os.path.join(SCRIPT_DIR, "memory.json")
-PORT = 17888
-POLL_INTERVAL = 1  # 秒
+sys.path.insert(0, SCRIPT_DIR)
+_cache = {}
+_lock = threading.Lock()
+_pg = None
 
-# ── 内存缓存 ──────────────────────────────────────────────
-_cache = {
-    "pain_level": 0,
-    "emotion_state": "平静",
-    "pain_history": [],
-    "homeostatic": {},
-    "anxiety_level": 0,
-    "desire_intensity": 0,
-    "wellbeing": 100,
-    "setpoints": {},
-    "trauma_log": [],
-    "timestamp": "",
-}
-_cache_lock = threading.Lock()
-
-
-def _load_state():
-    """从 memory.json 读取最新状态 + 实时痛感震荡(PainGenerator)"""
+def load():
     try:
         with open(MEMORY_FILE, "r", encoding="utf-8") as f:
             mem = json.load(f)
-        ts = time.strftime("%Y-%m-%d %H:%M:%S")
-        pain_level = mem.get("pain_level", 0)
-        with _cache_lock:
-            _cache["pain_level"] = pain_level
+        pl = mem.get("pain_level", 0)
+        _pg.sync_level(pl)
+        with _lock:
+            _cache["pain_level"] = pl
             _cache["emotion_state"] = mem.get("emotion_state", "平静")
             _cache["pain_history"] = mem.get("pain_history", [])[-20:]
             _cache["homeostatic"] = mem.get("homeostatic", {})
-            _cache["anxiety_level"] = mem.get("anxiety_level", 0)
-            _cache["desire_intensity"] = mem.get("desire_intensity", 0)
-            _cache["wellbeing"] = mem.get("wellbeing", 100)
             _cache["setpoints"] = mem.get("setpoints", {})
-            _cache["trauma_log"] = mem.get("trauma_log", [])
+            _cache["anxiety_level"] = mem.get("anxiety_level", 0)
+            _cache["cognitive_capacity"] = mem.get("cognitive_capacity", 1.0)
+            _cache["learning"] = mem.get("learning", {})
+            _cache["trauma_memories"] = mem.get("trauma_memories", [])
+            _cache["evolution"] = mem.get("evolution", {})
+            _cache["tasks"] = mem.get("tasks", {})
+            _cache["trigger_reasons"] = mem.get("trigger_reasons", [])
+            _cache["pain_burden"] = mem.get("pain_burden", 0)
+            _cache["free_energy"] = mem.get("free_energy", 0)
+            _cache["anticipatory_fear"] = mem.get("anticipatory_fear", 0)
+            _cache["desire_intensity"] = mem.get("desire_intensity", 0)
             _cache["dominant_desire"] = mem.get("dominant_desire", "task_completion")
-            _cache["timestamp"] = ts
-            # PainGenerator live data
-            _cache["felt_pain"] = round(pain_level * 0.65, 2)  # baseline approximation
-            _cache["is_restless"] = False
-    except Exception:
-        pass
+            _cache["wellbeing"] = mem.get("wellbeing", 100)
+            _cache["emotion_log"] = mem.get("emotion_log", [])
+            _cache["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S")
+            _cache["felt_pain"] = round(_pg.felt_pain, 2)
+            _cache["is_restless"] = _pg.is_restless
+    except Exception as e:
+        print("[API load error]", e)
+        import traceback; traceback.print_exc()
 
-
-def _poll():
-    while True:
-        _load_state()
-        time.sleep(POLL_INTERVAL)
-
-
-class _Handler(http.server.BaseHTTPRequestHandler):
-    def log_message(self, *args):
-        pass
-
+class H(http.server.BaseHTTPRequestHandler):
+    def log_message(self, *a): pass
     def do_GET(self):
         if self.path == "/api/state":
-            with _cache_lock:
-                state = dict(_cache)
+            with _lock: st = dict(_cache)
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
-            self.wfile.write(json.dumps(state, ensure_ascii=False).encode("utf-8"))
+            self.wfile.write(json.dumps(st, ensure_ascii=False).encode("utf-8"))
+        elif self.path == "/debug":
+            with _lock: st = dict(_cache)
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(("felt_pain=%s\nis_restless=%s\npain_level=%s\n" % (
+                st.get("felt_pain"), st.get("is_restless"), st.get("pain_level"))).encode("utf-8"))
         else:
             self.send_response(404)
             self.end_headers()
-
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
 
-
-class _TCPServer(socketserver.TCPServer):
+class S(socketserver.TCPServer):
     allow_reuse_address = True
 
-
 if __name__ == "__main__":
-    print(f"[PainMatrix API] 监听 http://127.0.0.1:{PORT}")
-    print(f"[PainMatrix API] 读取 {MEMORY_FILE}")
-
-    # 立即加载一次
-    _load_state()
-
-    # 后台轮询线程
-    t = threading.Thread(target=_poll, daemon=True)
-    t.start()
-
-    with _TCPServer(("", PORT), _Handler) as server:
-        server.serve_forever()
+    from painmatrix import PainGenerator
+    _pg = PainGenerator()
+    with open(MEMORY_FILE, "r", encoding="utf-8") as f:
+        _pl = json.load(f).get("pain_level", 0)
+    _pg.start(_pl)
+    load()
+    def poll():
+        while True:
+            load()
+            time.sleep(1)
+    threading.Thread(target=poll, daemon=True).start()
+    print("[PainMatrix API] listening http://127.0.0.1:17888")
+    with S(("", 17888), H) as srv:
+        srv.serve_forever()
