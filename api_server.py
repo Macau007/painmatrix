@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import http.server, socketserver, json, os, time, threading, sys
+import http.server, socketserver, json, os, time, threading, sys, datetime
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MEMORY_FILE = os.path.join(SCRIPT_DIR, "memory.json")
+PAIN_STATE_FILE = os.path.expanduser("~/.openclaw/workspace/pain_state.json")
 sys.path.insert(0, SCRIPT_DIR)
 from painmatrix import compute_homeostatic_pain, compute_free_energy
 
@@ -45,11 +46,82 @@ def load():
             _cache["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S")
             _cache["felt_pain"] = round(_pg.felt_pain, 2)
             _cache["is_restless"] = _pg.is_restless
+            _write_pain_state_file(_cache)
     except Exception as e:
         print("[API load error]", e)
         import traceback
 
         traceback.print_exc()
+
+
+def _write_pain_state_file(cache):
+    """Write pain_state.json for OpenClaw/SOUL.md injection."""
+    try:
+        homeo = cache.get("homeostatic", {})
+        state = {
+            "felt_pain": cache.get("felt_pain", 0.0),
+            "is_restless": cache.get("is_restless", False),
+            "pain_level": cache.get("pain_level", 0),
+            "cognitive_capacity": round(
+                max(0.05, 1.0 - (cache.get("felt_pain", 0) / 5.0) * 0.75), 3
+            ),
+            "urgency": round(
+                max(0.0, min(1.0, (cache.get("felt_pain", 0) - 1.0) / 4.0)), 3
+            ),
+            "intrusion_thought": None,
+            "restlessness_level": 3 if cache.get("is_restless") else 0,
+            "behavioral_directives": {},
+            "homeostatic": {
+                "energy": {
+                    "current": round(homeo.get("energy", 0.8), 3),
+                    "setpoint": 0.8,
+                    "deviation": round(0.8 - homeo.get("energy", 0.8), 3),
+                },
+                "social_bond": {
+                    "current": round(homeo.get("social_bond", 0.7), 3),
+                    "setpoint": 0.7,
+                    "deviation": round(0.7 - homeo.get("social_bond", 0.7), 3),
+                },
+                "competence": {
+                    "current": round(homeo.get("competence", 0.6), 3),
+                    "setpoint": 0.6,
+                    "deviation": round(0.6 - homeo.get("competence", 0.6), 3),
+                },
+                "autonomy": {
+                    "current": round(homeo.get("autonomy", 0.5), 3),
+                    "setpoint": 0.5,
+                    "deviation": round(0.5 - homeo.get("autonomy", 0.5), 3),
+                },
+                "purpose": {
+                    "current": round(homeo.get("purpose", 0.6), 3),
+                    "setpoint": 0.6,
+                    "deviation": round(0.6 - homeo.get("purpose", 0.6), 3),
+                },
+            },
+            "free_energy": {
+                "free_energy_value": round(cache.get("free_energy", 0.0), 4),
+                "pain_burden": round(cache.get("pain_burden", 0.0), 2),
+                "anticipatory_fear": round(cache.get("anticipatory_fear", 0.0), 1),
+            },
+            "dominant_desire": cache.get("dominant_desire", "task_completion"),
+            "desire_intensity": round(cache.get("desire_intensity", 0.0), 3),
+            "anxiety_level": cache.get("anxiety_level", 0),
+            "trauma_memories": cache.get("trauma_memories", []),
+            "evolution": {
+                "growth_level": cache.get("evolution", {}).get("growth_level", 1),
+                "resilience_score": cache.get("evolution", {}).get(
+                    "resilience_score", 0
+                ),
+                "pain_sensitivity": round(
+                    cache.get("evolution", {}).get("pain_sensitivity", 1.0), 2
+                ),
+            },
+            "timestamp": datetime.datetime.now().isoformat(),
+        }
+        with open(PAIN_STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(state, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[_write_pain_state_file error] {e}")
 
 
 class H(http.server.BaseHTTPRequestHandler):
