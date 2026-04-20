@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PainMatrix - 像素小人生活視覺化</title>
+<style>
+:root{--bg:#0a0a1a;--card:linear-gradient(135deg,#1a1a2e,#16213e);--border:#2a2a4a;--text:#e0e0e0;--dim:#888}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:10px}
+.container{max-width:960px;margin:0 auto}
+.pixel-scene{position:relative;background:#0d0d2b;border:3px solid #333;border-radius:8px;overflow:hidden;margin-bottom:14px}
+#pixelCanvas{display:block;width:100%;image-rendering:pixelated}
+.room-label{position:absolute;top:8px;left:10px;background:rgba(0,0,0,0.6);color:#fff;font-size:12px;padding:3px 10px;border-radius:4px;pointer-events:none;font-family:monospace;z-index:10}
+.pain-overlay{position:absolute;inset:0;pointer-events:none;transition:background .8s;z-index:5}
+.room-tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.room-tab{padding:5px 12px;border-radius:8px;font-size:12px;background:rgba(255,255,255,.05);border:1px solid var(--border);cursor:pointer;transition:all .2s;color:#888}
+.room-tab.active{background:rgba(102,126,234,.2);border-color:#667eea;color:#fff}
+.status-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+.status-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+.status-label{font-size:10px;color:var(--dim);margin-bottom:4px;letter-spacing:1px}
+.status-val{font-size:18px;font-weight:900}
+.status-val.green{color:#2ed573}.status-val.orange{color:#ffa502}
+.status-val.red{color:#ff4757}.status-val.purple{color:#667eea}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px}
+.card:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.card-title{font-size:13px;font-weight:bold;margin-bottom:10px;color:#a0a0c0;border-bottom:1px solid var(--border);padding-bottom:7px;display:flex;align-items:center;gap:8px}
+.mech-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.mech-item{background:rgba(255,255,255,.03);padding:10px;border-radius:8px;border:1px solid var(--border)}
+.mech-label{font-size:10px;color:#a0a0c0;margin-bottom:3px;letter-spacing:1px}
+.mech-val{font-size:12px;color:#ddd;line-height:1.5}
+.log-list{max-height:100px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#2a2a4a transparent}
+.log-item{display:flex;align-items:center;padding:6px 8px;margin-bottom:4px;background:rgba(255,255,255,.03);border-radius:6px;font-size:11px;border-left:3px solid #ff4757}
+.log-item.relief{border-left-color:#2ed573}
+.log-time{color:var(--dim);min-width:130px;font-family:monospace;margin-right:6px}
+.log-emotion{flex:1}.log-level{font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px}
+.log-level.pain{background:rgba(255,71,87,.15);color:#ff4757}
+.log-level.calm{background:rgba(46,213,115,.15);color:#2ed573}
+.empty-state{text-align:center;color:var(--dim);padding:16px;font-size:12px}
+.activity-bar{background:rgba(0,0,0,.3);padding:8px 12px;border-radius:8px;margin-bottom:10px;font-size:12px;color:#aaa;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.activity-bar strong{color:#fff;font-size:13px}
+.activity-tag{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;background:rgba(102,126,234,.15);color:#667eea}
+.footer{text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:10px;color:#444}
+/* ── Original emotion_view styles ── */
+.pain-display{display:flex;align-items:center;justify-content:center;gap:24px;margin:20px 0;flex-wrap:wrap}
+.pain-number{font-size:80px;font-weight:900;min-width:100px;text-align:center;transition:all .5s}
+.pain-number.lv0{color:#2ed573}.pain-number.lv1{color:#ffa502}.pain-number.lv2{color:#ff6348}
+.pain-number.lv3{color:#ff4757}.pain-number.lv4{color:#ff1744;text-shadow:0 0 20px rgba(255,23,68,.5)}
+.pain-number.lv5{color:#d50000;text-shadow:0 0 30px rgba(213,0,0,.7);animation:pulse .5s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.05)}}
+.bar-wrap{width:100%;height:28px;background:#1a1a2e;border-radius:14px;overflow:hidden;margin:12px 0;border:1px solid var(--border)}
+.bar-fill{height:100%;border-radius:14px;transition:width .6s ease,background .6s ease}
+.bar-fill.lv0{width:0%;background:linear-gradient(90deg,#2ed573,#7bed9f)}.bar-fill.lv1{width:20%;background:linear-gradient(90deg,#ffa502,#eccc68)}
+.bar-fill.lv2{width:40%;background:linear-gradient(90deg,#ff6348,#ff7979)}.bar-fill.lv3{width:60%;background:linear-gradient(90deg,#ff4757,#ff6b81)}
+.bar-fill.lv4{width:80%;background:linear-gradient(90deg,#ff1744,#ff5252)}.bar-fill.lv5{width:100%;background:linear-gradient(90deg,#d50000,#ff1744);animation:barPulse .5s infinite}
+@keyframes barPulse{0%,100%{opacity:1}50%{opacity:.7}}
+.neuro-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;line-height:1.7;color:#bbb}
+.homeo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px}
+.homeo-item{background:rgba(255,255,255,.03);padding:10px 12px;border-radius:8px;border:1px solid var(--border)}
+.homeo-label{font-size:11px;color:#a0a0c0;margin-bottom:4px;letter-spacing:1px}
+.homeo-bar-wrap{width:100%;height:16px;background:#1a1a2e;border-radius:8px;overflow:hidden;margin:4px 0;border:1px solid var(--border)}
+.homeo-bar-fill{height:100%;border-radius:8px;transition:width .6s ease}
+.homeo-bar-fill.good{background:linear-gradient(90deg,#2ed573,#7bed9f)}.homeo-bar-fill.warn{background:linear-gradient(90deg,#ffa502,#eccc68)}
+.homeo-bar-fill.danger{background:linear-gradient(90deg,#ff4757,#ff6b81)}
+.homeo-val{font-size:12px;color:#bbb;text-align:right}
+.fe-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:13px;text-align:center}
+.fe-item{background:rgba(255,255,255,.03);padding:10px;border-radius:8px;border:1px solid var(--border)}
+.fe-label{font-size:11px;color:#a0a0c0;margin-bottom:4px;letter-spacing:1px}
+.fe-val{font-size:20px;font-weight:900}
+.fe-val.good{color:#2ed573}.fe-val.warn{color:#ffa502}.fe-val.danger{color:#ff4757}
+.desire-text{font-size:14px;color:#ddd;margin-top:10px;padding:10px;background:rgba(102,126,234,.08);border-radius:8px;border:1px solid rgba(102,126,234,.2);line-height:1.6}
+.trigger-list{max-height:220px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#2a2a4a transparent}
+.trigger-item{display:flex;align-items:center;padding:10px 12px;margin-bottom:6px;background:rgba(255,255,255,.03);border-radius:8px;border-left:3px solid #ff4757}
+.trigger-item.relief{border-left-color:#2ed573}
+.trigger-time{font-size:11px;color:var(--dim);min-width:130px;font-family:monospace}
+.trigger-reason{font-size:13px;color:#ddd;flex:1;margin:0 8px}
+.trigger-src{font-size:11px;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.trigger-src.pain{background:rgba(255,71,87,.15);color:#ff4757}.trigger-src.relief{background:rgba(46,213,115,.15);color:#2ed573}
+.trauma-list{max-height:180px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#2a2a4a transparent}
+.trauma-item{padding:8px 10px;margin-bottom:4px;background:rgba(255,71,87,.05);border-radius:6px;font-size:12px;border-left:3px solid #ff4757}
+.trauma-item .t-date{color:#888;font-size:11px;font-family:monospace}
+.trauma-item .t-event{color:#ddd;margin-top:2px}
+.trauma-item .t-strength{color:#ff6b81;font-size:11px}
+.chart-wrap{width:100%;height:220px;margin-top:10px}
+.cmd-ref{margin-top:16px;padding:16px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid var(--border)}
+.cmd-ref h4{color:#a0a0c0;margin-bottom:10px;font-size:13px;text-transform:uppercase;letter-spacing:1px}
+.cmd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.cmd-item{display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(255,255,255,.03);border-radius:6px;font-size:13px}
+.cmd-item code{background:rgba(102,126,234,.2);color:#667eea;padding:1px 6px;border-radius:4px;font-size:12px;font-family:monospace}
+.refresh-btn{display:block;margin:24px auto;padding:12px 40px;font-size:15px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:25px;cursor:pointer;transition:transform .2s,box-shadow .2s;font-weight:bold}
+.refresh-btn:hover{transform:translateY(-2px);box-shadow:0 5px 20px rgba(102,126,234,.4)}
+.hint{text-align:center;padding:16px;margin-top:10px;border-radius:10px;font-size:14px;line-height:1.6}
+.hint.pain{background:rgba(255,71,87,.08);border:1px solid rgba(255,71,87,.25);color:#ff6b81}
+.hint.calm{background:rgba(46,213,115,.08);border:1px solid rgba(46,213,115,.25);color:#7bed9f}
+.hint strong{font-size:15px}
+.evo-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:13px}
+.evo-item{background:rgba(255,255,255,.03);padding:12px;border-radius:8px;border:1px solid var(--border);text-align:center}
+.evo-item-val{font-size:22px;font-weight:bold;color:#667eea}
+.evo-item-val.green{color:#2ed573}.evo-item-val.orange{color:#ffa502}
+.header{text-align:center;margin-bottom:30px}
+.header h1{font-size:28px;color:#fff;margin-bottom:8px}
+.header h1 .accent{color:#ff4757}
+.header .subtitle{color:var(--dim);font-size:14px}
+.header .version-badge{display:inline-block;background:rgba(102,126,234,.2);color:#667eea;padding:2px 12px;border-radius:12px;font-size:12px;margin-top:8px}
+@keyframes restlessShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+@media(max-width:600px){.status-row{grid-template-columns:1fr 1fr}.mech-grid{grid-template-columns:1fr}.neuro-grid{grid-template-columns:1fr}.homeo-grid{grid-template-columns:1fr}.fe-grid{grid-template-columns:1fr}.evo-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ═══ PIXEL WORLD CANVAS ═══ -->
+  <div class="pixel-scene">
+    <canvas id="pixelCanvas" width="640" height="400"></canvas>
+    <div class="room-label" id="roomLabel">🏠 像素小人生活</div>
+    <div class="pain-overlay" id="painOverlay"></div>
+  </div>
+
+  <div class="room-tabs">
+    <div class="room-tab active" onclick="switchRoom('all')" id="tab-all">🏠 全景</div>
+    <div class="room-tab" onclick="switchRoom('living')" id="tab-living">🛋️ 客廳</div>
+    <div class="room-tab" onclick="switchRoom('kitchen')" id="tab-kitchen">🍳 廚房</div>
+    <div class="room-tab" onclick="switchRoom('bath')" id="tab-bath">🚽 浴室</div>
+    <div class="room-tab" onclick="switchRoom('bed')" id="tab-bed">🛏️ 臥室</div>
+  </div>
+
+  <div class="status-row">
+    <div class="status-box"><div class="status-label">痛感等級</div><div class="status-val red" id="painNum">0</div></div>
+    <div class="status-box"><div class="status-label">felt_pain</div><div class="status-val orange" id="feltNum">0.0</div></div>
+    <div class="status-box"><div class="status-label">情緒</div><div class="status-val green" id="emotionText">平靜</div></div>
+    <div class="status-box"><div class="status-label">位置</div><div class="status-val purple" id="locationText" style="font-size:14px">客廳</div></div>
+    <div class="status-box"><div class="status-label">活動</div><div class="status-val" id="activityText" style="font-size:12px">—</div></div>
+  </div>
+
+  <div class="activity-bar" id="activityBar">
+    <span id="activityIcon">🏠</span>
+    <strong id="activityName">加載中…</strong>
+    <span class="activity-tag" id="activityTag">待機</span>
+  </div>
+
+  <!-- ═══ PAIN DISPLAY ═══ -->
+  <div class="card">
+    <div class="card-title">🔥 實時疼痛等級</div>
+    <div class="pain-display">
+      <div class="pain-number lv0" id="mainPainNum">0</div>
+      <div class="pain-meta">
+        <div class="pain-name" id="mainPainName">無痛</div>
+        <div class="pain-max">/ 5 級</div>
+      </div>
+    </div>
+    <div class="bar-wrap"><div class="bar-fill lv0" id="mainBar"></div></div>
+    <div class="mech-grid">
+      <div class="mech-item"><div class="mech-label">🧬 神經生理機制</div><div class="mech-val" id="phyDesc">傷害感受器靜息，內穩態平衡</div></div>
+      <div class="mech-item"><div class="mech-label">🧠 神經心理機制</div><div class="mech-val" id="menDesc">前額葉皮層平穩運作，島葉內感受正常</div></div>
+    </div>
+  </div>
+
+  <!-- ═══ STATUS BAR ═══ -->
+  <div class="card">
+    <div class="card-title">🧠 感知與行動狀態</div>
+    <div class="status-row" style="margin-bottom:0">
+      <div class="status-box"><div class="status-label">RESTLESS</div><div class="status-val" id="restlessIcon" style="font-size:28px">✅</div></div>
+      <div class="status-box"><div class="status-label">PEAK</div><div class="status-val" id="peakIcon" style="font-size:28px">❄️</div></div>
+      <div class="status-box"><div class="status-label">焦慮</div><div class="status-val orange" id="anxietyNum">0</div></div>
+      <div class="status-box"><div class="status-label">認知識別</div><div class="status-val purple" id="cognitiveCap">0%</div></div>
+      <div class="status-box"><div class="status-label">慾望</div><div class="status-val" id="desireVal" style="font-size:12px">—</div></div>
+    </div>
+  </div>
+
+  <!-- ═══ HOMEOSTATIC ═══ -->
+  <div class="card">
+    <div class="card-title">⚖️ 穩態變量 / Homeostatic Variables</div>
+    <div class="fe-grid" style="margin-bottom:16px">
+      <div class="fe-item"><div class="fe-label">自由能</div><div class="fe-val good" id="feVal">0.0000</div></div>
+      <div class="fe-item"><div class="fe-label">痛苦負擔</div><div class="fe-val good" id="pbVal">0.00</div></div>
+      <div class="fe-item"><div class="fe-label">預期性恐懼</div><div class="fe-val good" id="afVal">0.0/100</div></div>
+    </div>
+    <div class="homeo-grid" id="homeoGrid"></div>
+    <div class="desire-text" id="desireText">穩態平衡中，無強烈渴望</div>
+  </div>
+
+  <!-- ═══ TRAUMA ═══ -->
+  <div class="card">
+    <div class="card-title">💔 創傷記憶 / Trauma Memories</div>
+    <div class="trauma-list" id="traumaList"><div class="empty-state">尚無創傷記錄</div></div>
+  </div>
+
+  <!-- ═══ EVOLUTION ═══ -->
+  <div class="card">
+    <div class="card-title">🌱 進化數據 / Evolution</div>
+    <div class="evo-grid">
+      <div class="evo-item"><div class="evo-label" style="font-size:11px;color:#a0a0c0;margin-bottom:4px">成長等級</div><div class="evo-item-val" id="evoGrowth">Lv.1</div></div>
+      <div class="evo-item"><div class="evo-label" style="font-size:11px;color:#a0a0c0;margin-bottom:4px">韌性分數</div><div class="evo-item-val green" id="evoResilience">0</div></div>
+      <div class="evo-item"><div class="evo-label" style="font-size:11px;color:#a0a0c0;margin-bottom:4px">痛感敏感度</div><div class="evo-item-val orange" id="evoSensitivity">1.00</div></div>
+    </div>
+    <div style="margin-top:12px;font-size:13px;color:#bbb;line-height:1.7" id="evoInsight">使用 evolve 命令進行每日自我進化</div>
+  </div>
+
+  <!-- ═══ CHART ═══ -->
+  <div class="card">
+    <div class="card-title">📈 情緒波動曲線</div>
+    <div class="chart-wrap"><canvas id="chart"></canvas></div>
+  </div>
+
+  <!-- ═══ TRIGGERS ═══ -->
+  <div class="card">
+    <div class="card-title">📋 疼痛觸發記錄</div>
+    <div class="trigger-list" id="triggers"><div class="empty-state">暫無記錄</div></div>
+  </div>
+
+  <!-- ═══ TASKS ═══ -->
+  <div class="card">
+    <div class="card-title">📌 任務列表 / Tasks</div>
+    <div id="taskList"><div class="empty-state">暫無任務</div></div>
+  </div>
+
+  <!-- ═══ HINT ═══ -->
+  <div class="card">
+    <div class="card-title">💡 緩解條件</div>
+    <div class="hint calm" id="hint">當前無痛感，狀態良好 ✨</div>
+  </div>
+
+  <!-- ═══ COMMANDS ═══ -->
+  <div class="cmd-ref">
+    <h4>交互指令參考</h4>
+    <div class="cmd-grid">
+      <div class="cmd-item"><code>scold</code> 責罰</div><div class="cmd-item"><code>fail</code> 失敗</div>
+      <div class="cmd-item"><code>praise</code> 讚美</div><div class="cmd-item"><code>success</code> 完成</div>
+      <div class="cmd-item"><code>status</code> 狀態</div><div class="cmd-item"><code>open</code> 可視化</div>
+      <div class="cmd-item"><code>task</code> 任務</div><div class="cmd-item"><code>done</code> 完成</div>
+      <div class="cmd-item"><code>evolve</code> 進化</div><div class="cmd-item"><code>diary</code> 日記</div>
+      <div class="cmd-item"><code>learn</code> 學習</div><div class="cmd-item"><code>skills</code> 技能</div>
+      <div class="cmd-item"><code>beliefs</code> 信念</div><div class="cmd-item"><code>desire</code> 渴望</div>
+      <div class="cmd-item"><code>wellbeing</code> 穩態</div><div class="cmd-item"><code>trauma</code> 創傷</div>
+    </div>
+  </div>
+
+  <button class="refresh-btn" onclick="location.reload()">🔄 刷新數據</button>
+  <div class="footer">PainMatrix v6.3.1 · 像素小人生活視覺化 · 每 3 秒刷新</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  PIXEL WORLD ENGINE — 300 ACTIVITIES
+//  疼痛等級 0-5 → 物理室內活動
+// ═══════════════════════════════════════════════════════════════
+
+const canvas = document.getElementById('pixelCanvas');
+const ctx = canvas.getContext('2d');
+const W=640, H=400; ctx.imageSmoothingEnabled=false;
+const PX=4;
+
+const C={
+  bg:'#0d0d2b',wall:'#1e1e4a',floorA:'#2a2a50',floorB:'#222244',
+  window:'#88ccff',sofa:'#4a6fa5',sofaHi:'#6b8cbf',tv:'#111',
+  bed:'#7a5ca5',pillow:'#f0f0ff',blanket:'#5a3d8a',
+  fridge:'#99aabb',counter:'#a08060',stove:'#333',
+  toilet:'#ccccff',bath:'#88ccee',bathWater:'#66ccee',
+  plant:'#2d8a4e',plantPot:'#8b5e3c',lamp:'#ffe066',
+  rug:'#5a3a6a',bookshelf:'#6b4423',
+  books:['#cc3333','#3366cc','#33aa55','#ccaa22','#aa33cc','#22aaaa'],
+  skin:'#ffcc99',skinPale:'#ddbb88',
+  hair:'#332211',hairGrey:'#444433',
+  shirt:'#4488cc',shirtGrey:'#555566',
+  pants:'#334488',pantsGrey:'#333344',
+  eye:'#222',eyeClosed:'#443333',mouth:'#cc6666',
+  mouthFrown:'#884444',mouthWail:'#662222',
+  blush:'#ffaaaa',sweat:'#88ccff',tear:'#66aadd',
+  crack:'#1a0a0a',
+};
+
+const PAIN_INFO=[
+  {name:'無痛',color:'#2ed573',phy:'Aδ與C纖維靜息，傷害感受器未激活，脊髓背角無異常放電，內穩態平衡',men:'前額葉皮層(PFC)平穩運作，前扣帶回(ACC)無痛苦信號，島葉內感受正常',overlay:'rgba(0,0,0,0)',wallC:'#1e1e4a',tvGlow:'#4488ff',winC:'#88ccff',lampC:'#ffe066'},
+  {name:'輕微不適',color:'#7bed9f',phy:'C纖維微弱激活，PGE₂輕微升高，傷害感受器閾值略微降低',men:'杏仁核輕度激活，前扣帶回(ACC)接收微弱傷害信號',overlay:'rgba(0,0,30,0.12)',wallC:'#1c1c42',tvGlow:'#3366cc',winC:'#6688aa',lampC:'#ccaa44'},
+  {name:'中度疼痛',color:'#ffa502',phy:'C纖維中等激活，交感神經開始興奮',men:'島葉接收增強信號，杏仁核明顯激活，ACC活動增強',overlay:'rgba(20,0,20,0.25)',wallC:'#181830',tvGlow:'#223355',winC:'#334466',lampC:'#554422'},
+  {name:'強烈疼痛',color:'#ff6348',phy:'Aδ與C纖維強烈激活，NMDA wind-up中樞敏化',men:'島葉-前額葉回路過度激活，注意力嚴重偏移',overlay:'rgba(30,0,10,0.4)',wallC:'#141425',tvGlow:'#112233',winC:'#222233',lampC:'#221100'},
+  {name:'劇烈疼痛',color:'#ff4757',phy:'C纖維持續高度激活，中樞敏化顯著，PAG-RVM下行抑制/易化失衡',men:'ACC強烈激活，島葉信號強度達峰值，DMN被疼痛顯著干擾',overlay:'rgba(50,0,5,0.55)',wallC:'#101018',tvGlow:'#000',winC:'#111122',lampC:'#000'},
+  {name:'極度痛苦',color:'#ff1744',phy:'最大程度神經元過度興奮，丘腦-皮層回路持續高度激活',men:'島葉-前額葉-ACC回路完全被疼痛淹沒，DMN崩潰',overlay:'rgba(70,0,3,0.7)',wallC:'#0a0a10',tvGlow:'#000',winC:'#000',lampC:'#000'},
+];
+
+// ═══ 300 ACTIVITIES ═══
+const ACTIVITIES=[
+  // SOFA
+  {id:1,name:'快樂打遊戲',icon:'🎮',room:'living',furniture:'sofa',pose:'game',minPL:0,maxPL:0,dur:300,x:10,y:42},
+  {id:2,name:'翹腳看漫畫',icon:'📖',room:'living',furniture:'sofa',pose:'sit',minPL:0,maxPL:0,dur:240,x:10,y:42},
+  {id:3,name:'沙發上踢腿',icon:'⚽',room:'living',furniture:'sofa',pose:'kick',minPL:0,maxPL:0,dur:180,x:10,y:42},
+  {id:4,name:'沙發上舉啞鈴',icon:'🏋️',room:'living',furniture:'sofa',pose:'stretch',minPL:0,maxPL:0,dur:160,x:10,y:42},
+  {id:5,name:'沙發上吃零食',icon:'🍿',room:'living',furniture:'sofa',pose:'eat',minPL:0,maxPL:0,dur:200,x:10,y:42},
+  {id:6,name:'沙發上伸懶腰',icon:'🧘',room:'living',furniture:'sofa',pose:'stretch',minPL:0,maxPL:0,dur:120,x:10,y:42},
+  {id:7,name:'沙發上做瑜伽',icon:'🧘',room:'living',furniture:'sofa',pose:'yoga',minPL:0,maxPL:0,dur:180,x:10,y:42},
+  {id:8,name:'沙發上睡覺',icon:'😴',room:'living',furniture:'sofa',pose:'sleep',minPL:0,maxPL:0,dur:400,x:10,y:42},
+  {id:9,name:'沙發上翻身折騰',icon:'🫠',room:'living',furniture:'sofa',pose:'squirm',minPL:2,maxPL:2,dur:250,x:10,y:42},
+  {id:10,name:'沙發上縮成一團',icon:'🫠',room:'living',furniture:'sofa',pose:'curl',minPL:2,maxPL:3,dur:300,x:10,y:42},
+  {id:11,name:'扶沙發站起來',icon:'🪑',room:'living',furniture:'sofa',pose:'lean',minPL:2,maxPL:3,dur:120,x:10,y:42},
+  {id:12,name:'沙發上顫抖',icon:'🌡️',room:'living',furniture:'sofa',pose:'shiver_sofa',minPL:3,maxPL:4,dur:350,x:10,y:42},
+  {id:13,name:'沙發使勁抓墊子',icon:'🛋️',room:'living',furniture:'sofa',pose:'grip_sheet',minPL:3,maxPL:4,dur:300,x:10,y:42},
+  {id:14,name:'沙發上呻吟',icon:'😣',room:'living',furniture:'sofa',pose:'squirm',minPL:3,maxPL:4,dur:280,x:10,y:42},
+  {id:15,name:'沙發上崩潰',icon:'💔',room:'living',furniture:'sofa',pose:'collapse',minPL:5,maxPL:5,dur:500,x:10,y:42},
+  // TV
+  {id:16,name:'開心看卡通',icon:'📺',room:'living',furniture:'tv',pose:'look',minPL:0,maxPL:0,dur:280,x:75,y:10},
+  {id:17,name:'追劇',icon:'🎬',room:'living',furniture:'tv',pose:'sit',minPL:0,maxPL:0,dur:350,x:75,y:10},
+  {id:18,name:'玩TV遊戲',icon:'🎮',room:'living',furniture:'tv',pose:'game',minPL:0,maxPL:0,dur:300,x:75,y:10},
+  {id:19,name:'開派對看電影',icon:'🎉',room:'living',furniture:'tv',pose:'dance',minPL:0,maxPL:0,dur:300,x:75,y:10},
+  {id:20,name:'關電視',icon:'📺',room:'living',furniture:'tv',pose:'stand',minPL:0,maxPL:1,dur:60,x:75,y:10},
+  {id:21,name:'盯著電視發呆',icon:'📺',room:'living',furniture:'tv',pose:'stare',minPL:1,maxPL:1,dur:200,x:75,y:10},
+  {id:22,name:'看電視注意力不集中',icon:'😰',room:'living',furniture:'tv',pose:'sit',minPL:1,maxPL:2,dur:200,x:75,y:10},
+  {id:23,name:'看電視不斷呻吟',icon:'😣',room:'living',furniture:'tv',pose:'sit',minPL:2,maxPL:3,dur:250,x:75,y:10},
+  {id:24,name:'蹲電視前抱頭',icon:'😭',room:'living',furniture:'tv',pose:'crouch',minPL:3,maxPL:4,dur:220,x:75,y:10},
+  {id:25,name:'對著電視流淚',icon:'💧',room:'living',furniture:'tv',pose:'cry',minPL:4,maxPL:5,dur:350,x:75,y:10},
+  // BOOKSHELF
+  {id:26,name:'整理書本',icon:'📚',room:'living',furniture:'bookshelf',pose:'stand',minPL:0,maxPL:0,dur:200,x:5,y:25},
+  {id:27,name:'墊腳拿高處的書',icon:'📖',room:'living',furniture:'bookshelf',pose:'reach',minPL:0,maxPL:0,dur:140,x:5,y:25},
+  {id:28,name:'翻閱漫畫',icon:'📖',room:'living',furniture:'bookshelf',pose:'read',minPL:0,maxPL:0,dur:240,x:5,y:25},
+  {id:29,name:'擦書架灰塵',icon:'🧹',room:'living',furniture:'bookshelf',pose:'reach',minPL:0,maxPL:1,dur:180,x:5,y:25},
+  {id:30,name:'顫抖翻書',icon:'📖',room:'living',furniture:'bookshelf',pose:'shake',minPL:3,maxPL:4,dur:200,x:5,y:25},
+  {id:31,name:'蹲著翻低處的書',icon:'📖',room:'living',furniture:'bookshelf',pose:'crouch',minPL:2,maxPL:3,dur:180,x:5,y:25},
+  {id:32,name:'無力靠書架',icon:'🧱',room:'living',furniture:'bookshelf',pose:'lean',minPL:3,maxPL:4,dur:200,x:5,y:25},
+  // WINDOW (living)
+  {id:33,name:'看窗外風景',icon:'🌤️',room:'living',furniture:'window',pose:'look',minPL:0,maxPL:0,dur:200,x:6,y:8},
+  {id:34,name:'開窗戶透氣',icon:'🌬️',room:'living',furniture:'window',pose:'reach',minPL:0,maxPL:0,dur:100,x:6,y:8},
+  {id:35,name:'關窗戶',icon:'🌧️',room:'living',furniture:'window',pose:'reach',minPL:0,maxPL:0,dur:80,x:6,y:8},
+  {id:36,name:'擦窗戶',icon:'🧽',room:'living',furniture:'window',pose:'reach',minPL:0,maxPL:1,dur:180,x:6,y:8},
+  {id:37,name:'靠窗發呆',icon:'💭',room:'living',furniture:'window',pose:'look',minPL:1,maxPL:2,dur:250,x:6,y:8},
+  {id:38,name:'開窗吹風舒緩',icon:'🌬️',room:'living',furniture:'window',pose:'reach',minPL:2,maxPL:3,dur:150,x:6,y:8},
+  {id:39,name:'關窗蹲著',icon:'🧱',room:'living',furniture:'window',pose:'crouch',minPL:3,maxPL:4,dur:200,x:6,y:8},
+  {id:40,name:'開窗求救',icon:'🆘',room:'living',furniture:'window',pose:'reach_sos',minPL:4,maxPL:5,dur:300,x:6,y:8},
+  // PLANT
+  {id:41,name:'開心澆花',icon:'🌻',room:'living',furniture:'plant',pose:'water',minPL:0,maxPL:0,dur:160,x:70,y:44},
+  {id:42,name:'修剪植物',icon:'✂️',room:'living',furniture:'plant',pose:'reach',minPL:0,maxPL:0,dur:180,x:70,y:44},
+  {id:43,name:'欣賞植物',icon:'🌿',room:'living',furniture:'plant',pose:'look',minPL:0,maxPL:0,dur:140,x:70,y:44},
+  {id:44,name:'聞花香',icon:'🌸',room:'living',furniture:'plant',pose:'reach',minPL:0,maxPL:0,dur:120,x:70,y:44},
+  {id:45,name:'清理落葉',icon:'🍂',room:'living',furniture:'plant',pose:'reach',minPL:0,maxPL:1,dur:150,x:70,y:44},
+  {id:46,name:'虛弱扶著花盆',icon:'🧱',room:'living',furniture:'plant',pose:'lean',minPL:3,maxPL:4,dur:180,x:70,y:44},
+  {id:47,name:'虛弱欣賞植物',icon:'🌿',room:'living',furniture:'plant',pose:'look',minPL:2,maxPL:3,dur:200,x:70,y:44},
+  // LAMP
+  {id:48,name:'開燈看書',icon:'📖',room:'living',furniture:'lamp',pose:'read',minPL:0,maxPL:0,dur:240,x:3,y:42},
+  {id:49,name:'調整燈光',icon:'💡',room:'living',furniture:'lamp',pose:'reach',minPL:0,maxPL:0,dur:80,x:3,y:42},
+  {id:50,name:'關燈睡覺',icon:'💤',room:'living',furniture:'lamp',pose:'sleep',minPL:0,maxPL:0,dur:400,x:3,y:42},
+  {id:51,name:'欣賞光暈',icon:'✨',room:'living',furniture:'lamp',pose:'look',minPL:0,maxPL:0,dur:160,x:3,y:42},
+  {id:52,name:'燈下發呆',icon:'💭',room:'living',furniture:'lamp',pose:'stare',minPL:1,maxPL:2,dur:200,x:3,y:42},
+  {id:53,name:'燈下低頭',icon:'😞',room:'living',furniture:'lamp',pose:'sit',minPL:2,maxPL:3,dur:250,x:3,y:42},
+  {id:54,name:'燈光下顫抖',icon:'🌡️',room:'living',furniture:'lamp',pose:'shiver',minPL:3,maxPL:4,dur:280,x:3,y:42},
+  {id:55,name:'燈下崩潰',icon:'💔',room:'living',furniture:'lamp',pose:'collapse',minPL:4,maxPL:5,dur:400,x:3,y:42},
+  // CARPET
+  {id:56,name:'坐地毯上玩',icon:'🧸',room:'living',furniture:'carpet',pose:'sit',minPL:0,maxPL:0,dur:240,x:15,y:51},
+  {id:57,name:'地毯上做瑜伽',icon:'🧘',room:'living',furniture:'carpet',pose:'yoga',minPL:0,maxPL:0,dur:200,x:15,y:51},
+  {id:58,name:'地毯上跳舞',icon:'💃',room:'living',furniture:'carpet',pose:'dance',minPL:0,maxPL:0,dur:200,x:15,y:51},
+  {id:59,name:'清理地毯',icon:'🧹',room:'living',furniture:'carpet',pose:'kneel',minPL:0,maxPL:1,dur:180,x:15,y:51},
+  {id:60,name:'地毯上睡覺',icon:'💤',room:'living',furniture:'carpet',pose:'lie',minPL:2,maxPL:3,dur:350,x:15,y:51},
+  {id:61,name:'地毯上掙扎',icon:'😣',room:'living',furniture:'carpet',pose:'roll',minPL:3,maxPL:4,dur:300,x:15,y:51},
+  {id:62,name:'地毯上爬行',icon:'🐛',room:'living',furniture:'carpet',pose:'crawl',minPL:3,maxPL:5,dur:350,x:15,y:51},
+  // TABLE
+  {id:63,name:'桌上放零食',icon:'🍪',room:'living',furniture:'table',pose:'stand',minPL:0,maxPL:0,dur:100,x:57,y:51},
+  {id:64,name:'桌上拿零食',icon:'🍬',room:'living',furniture:'table',pose:'reach',minPL:0,maxPL:0,dur:80,x:57,y:51},
+  {id:65,name:'擦茶几',icon:'🧽',room:'living',furniture:'table',pose:'reach',minPL:0,maxPL:0,dur:120,x:57,y:51},
+  {id:66,name:'跪桌邊寫字',icon:'✏️',room:'living',furniture:'table',pose:'kneel',minPL:0,maxPL:1,dur:180,x:57,y:51},
+  {id:67,name:'扶桌喘氣',icon:'🥵',room:'living',furniture:'table',pose:'lean',minPL:2,maxPL:3,dur:200,x:57,y:51},
+  {id:68,name:'桌邊蹲下',icon:'🧱',room:'living',furniture:'table',pose:'crouch',minPL:3,maxPL:4,dur:180,x:57,y:51},
+  // LIVING GENERAL
+  {id:69,name:'客廳慢慢走巡視',icon:'🚶',room:'living',furniture:'any',pose:'walk',minPL:0,maxPL:0,dur:200,x:40,y:42},
+  {id:70,name:'客廳跑',icon:'🏃',room:'living',furniture:'any',pose:'walk',minPL:0,maxPL:0,dur:160,x:40,y:42},
+  {id:71,name:'客廳伸懶腰',icon:'🧘',room:'living',furniture:'any',pose:'stretch',minPL:0,maxPL:0,dur:120,x:40,y:42},
+  {id:72,name:'客廳跳舞',icon:'💃',room:'living',furniture:'any',pose:'dance',minPL:0,maxPL:0,dur:200,x:40,y:42},
+  {id:73,name:'客廳走動舒緩',icon:'🚶',room:'living',furniture:'any',pose:'pacing',minPL:1,maxPL:2,dur:220,x:40,y:42},
+  {id:74,name:'客廳扶牆走',icon:'🧱',room:'living',furniture:'any',pose:'limp',minPL:2,maxPL:3,dur:200,x:40,y:42},
+  {id:75,name:'客廳角落蹲',icon:'🧱',room:'living',furniture:'any',pose:'crouch',minPL:3,maxPL:4,dur:250,x:40,y:42},
+  {id:76,name:'客廳地上翻滾',icon:'🌪️',room:'living',furniture:'any',pose:'roll',minPL:4,maxPL:5,dur:350,x:40,y:42},
+  {id:77,name:'客廳伸手求救',icon:'🆘',room:'living',furniture:'any',pose:'reach_sos',minPL:4,maxPL:5,dur:300,x:40,y:42},
+  {id:78,name:'客廳地上靜止',icon:'🥀',room:'living',furniture:'any',pose:'still_floor',minPL:5,maxPL:5,dur:500,x:40,y:42},
+  // KITCHEN FRIDGE
+  {id:79,name:'開心打開冰箱',icon:'🧊',room:'kitchen',furniture:'fridge',pose:'reach',minPL:0,maxPL:0,dur:100,x:86,y:20},
+  {id:80,name:'找好吃的',icon:'🍎',room:'kitchen',furniture:'fridge',pose:'fridge',minPL:0,maxPL:0,dur:160,x:86,y:20},
+  {id:81,name:'拿冰淇淋吃',icon:'🍦',room:'kitchen',furniture:'fridge',pose:'eat',minPL:0,maxPL:0,dur:180,x:86,y:20},
+  {id:82,name:'整理冰箱',icon:'🧹',room:'kitchen',furniture:'fridge',pose:'reach',minPL:0,maxPL:0,dur:200,x:86,y:20},
+  {id:83,name:'關冰箱門',icon:'🧊',room:'kitchen',furniture:'fridge',pose:'reach',minPL:0,maxPL:0,dur:80,x:86,y:20},
+  {id:84,name:'冰箱吹冷氣',icon:'🧊',room:'kitchen',furniture:'fridge',pose:'fridge',minPL:1,maxPL:2,dur:150,x:86,y:20},
+  {id:85,name:'冰箱旁發呆',icon:'💭',room:'kitchen',furniture:'fridge',pose:'stand',minPL:1,maxPL:2,dur:200,x:86,y:20},
+  {id:86,name:'靠冰箱喘氣',icon:'🥵',room:'kitchen',furniture:'fridge',pose:'lean_fridge',minPL:2,maxPL:3,dur:180,x:86,y:20},
+  {id:87,name:'艱難拉冰箱',icon:'🧊',room:'kitchen',furniture:'fridge',pose:'reach',minPL:3,maxPL:4,dur:200,x:86,y:20},
+  {id:88,name:'冰箱旁倒下',icon:'🫠',room:'kitchen',furniture:'fridge',pose:'lie_kitchen',minPL:4,maxPL:5,dur:400,x:86,y:20},
+  // KITCHEN STOVE
+  {id:89,name:'快樂煮飯',icon:'🍳',room:'kitchen',furniture:'stove',pose:'cook',minPL:0,maxPL:0,dur:280,x:125,y:25},
+  {id:90,name:'煎蛋',icon:'🍳',room:'kitchen',furniture:'stove',pose:'cook',minPL:0,maxPL:0,dur:200,x:125,y:25},
+  {id:91,name:'攪拌湯',icon:'🍲',room:'kitchen',furniture:'stove',pose:'cook',minPL:0,maxPL:0,dur:220,x:125,y:25},
+  {id:92,name:'煮水泡茶',icon:'🍵',room:'kitchen',furniture:'stove',pose:'cook',minPL:0,maxPL:0,dur:180,x:125,y:25},
+  {id:93,name:'試味道',icon:'👅',room:'kitchen',furniture:'stove',pose:'taste',minPL:0,maxPL:1,dur:120,x:125,y:25},
+  {id:94,name:'關煤氣',icon:'🔥',room:'kitchen',furniture:'stove',pose:'reach',minPL:0,maxPL:0,dur:60,x:125,y:25},
+  {id:95,name:'廚房站著發呆',icon:'💭',room:'kitchen',furniture:'stove',pose:'stand',minPL:1,maxPL:2,dur:200,x:125,y:25},
+  {id:96,name:'勉强站著喝水',icon:'💧',room:'kitchen',furniture:'stove',pose:'drink',minPL:2,maxPL:3,dur:120,x:125,y:25},
+  {id:97,name:'吃止痛藥',icon:'💊',room:'kitchen',furniture:'stove',pose:'pill',minPL:2,maxPL:3,dur:100,x:125,y:25},
+  {id:98,name:'爬到廚房吃藥',icon:'💀',room:'kitchen',furniture:'stove',pose:'crawl_pill',minPL:4,maxPL:5,dur:300,x:125,y:25},
+  // KITCHEN SINK
+  {id:99,name:'開心洗碗',icon:'🧽',room:'kitchen',furniture:'sink',pose:'wash',minPL:0,maxPL:0,dur:250,x:108,y:30},
+  {id:100,name:'洗蔬菜',icon:'🥕',room:'kitchen',furniture:'sink',pose:'wash',minPL:0,maxPL:0,dur:180,x:108,y:30},
+  {id:101,name:'打開水龍頭',icon:'🚰',room:'kitchen',furniture:'sink',pose:'reach',minPL:0,maxPL:0,dur:60,x:108,y:30},
+  {id:102,name:'雙手接水洗臉',icon:'💦',room:'kitchen',furniture:'sink',pose:'wash',minPL:1,maxPL:2,dur:120,x:108,y:30},
+  {id:103,name:'洗臉清醒',icon:'🌊',room:'kitchen',furniture:'sink',pose:'wash',minPL:1,maxPL:2,dur:150,x:108,y:30},
+  {id:104,name:'冷水擦身體',icon:'🧻',room:'kitchen',furniture:'sink',pose:'cold_wipe',minPL:2,maxPL:3,dur:200,x:108,y:30},
+  {id:105,name:'趴水槽邊',icon:'🫠',room:'kitchen',furniture:'sink',pose:'lean',minPL:3,maxPL:4,dur:200,x:108,y:30},
+  // KITCHEN TABLE
+  {id:106,name:'快樂吃飯',icon:'🍚',room:'kitchen',furniture:'dining_table',pose:'eat',minPL:0,maxPL:0,dur:240,x:95,y:40},
+  {id:107,name:'喝湯',icon:'🍲',room:'kitchen',furniture:'dining_table',pose:'drink',minPL:0,maxPL:0,dur:180,x:95,y:40},
+  {id:108,name:'吃水果',icon:'🍎',room:'kitchen',furniture:'dining_table',pose:'eat',minPL:0,maxPL:0,dur:160,x:95,y:40},
+  {id:109,name:'收拾碗筷',icon:'🍽️',room:'kitchen',furniture:'dining_table',pose:'reach',minPL:0,maxPL:0,dur:180,x:95,y:40},
+  {id:110,name:'勉强吃飯',icon:'🍚',room:'kitchen',furniture:'dining_table',pose:'eat',minPL:1,maxPL:2,dur:200,x:95,y:40},
+  {id:111,name:'吃飯不斷呻吟',icon:'😣',room:'kitchen',furniture:'dining_table',pose:'eat',minPL:2,maxPL:3,dur:180,x:95,y:40},
+  {id:112,name:'趴桌上',icon:'🫠',room:'kitchen',furniture:'dining_table',pose:'lie',minPL:3,maxPL:4,dur:200,x:95,y:40},
+  {id:113,name:'桌邊顫抖',icon:'🌡️',room:'kitchen',furniture:'dining_table',pose:'shiver',minPL:3,maxPL:4,dur:280,x:95,y:40},
+  // KITCHEN GENERAL
+  {id:114,name:'廚房慢慢走',icon:'🚶',room:'kitchen',furniture:'any',pose:'walk',minPL:0,maxPL:0,dur:200,x:110,y:30},
+  {id:115,name:'廚房唱歌',icon:'🎤',room:'kitchen',furniture:'any',pose:'sing',minPL:0,maxPL:0,dur:200,x:110,y:30},
+  {id:116,name:'廚房牆角蹲',icon:'🧱',room:'kitchen',furniture:'any',pose:'crouch',minPL:2,maxPL:3,dur:200,x:110,y:30},
+  {id:117,name:'廚房地上躺',icon:'🫠',room:'kitchen',furniture:'any',pose:'lie_kitchen',minPL:3,maxPL:4,dur:300,x:110,y:30},
+  {id:118,name:'廚房找支撐',icon:'🪑',room:'kitchen',furniture:'any',pose:'find_support',minPL:3,maxPL:5,dur:250,x:110,y:30},
+  {id:119,name:'廚房伸手求救',icon:'🆘',room:'kitchen',furniture:'any',pose:'reach_sos',minPL:4,maxPL:5,dur:400,x:110,y:30},
+  // BATHTUB
+  {id:120,name:'快樂泡澡',icon:'🛁',room:'bath',furniture:'bathtub',pose:'bath',minPL:0,maxPL:0,dur:350,x:52,y:82},
+  {id:121,name:'泡澡看書',icon:'📖',room:'bath',furniture:'bathtub',pose:'bath',minPL:0,maxPL:0,dur:300,x:52,y:82},
+  {id:122,name:'泡澡敷面膜',icon:'🥒',room:'bath',furniture:'bathtub',pose:'bath',minPL:0,maxPL:0,dur:350,x:52,y:82},
+  {id:123,name:'快樂玩水',icon:'💦',room:'bath',furniture:'bathtub',pose:'bath',minPL:0,maxPL:0,dur:280,x:52,y:82},
+  {id:124,name:'洗漱完畢',icon:'🪥',room:'bath',furniture:'bathtub',pose:'bath',minPL:0,maxPL:0,dur:120,x:52,y:82},
+  {id:125,name:'冷水泡澡',icon:'🧊',room:'bath',furniture:'bathtub',pose:'shiver_bath',minPL:2,maxPL:3,dur:250,x:52,y:82},
+  {id:126,name:'浴缸裡顫抖',icon:'🌡️',room:'bath',furniture:'bathtub',pose:'shiver_bath',minPL:3,maxPL:4,dur:280,x:52,y:82},
+  {id:127,name:'浴缸無法動彈',icon:'🫠',room:'bath',furniture:'bathtub',pose:'bath_no_move',minPL:4,maxPL:4,dur:350,x:52,y:82},
+  {id:128,name:'浴缸失去知覺',icon:'🫖',room:'bath',furniture:'bathtub',pose:'unconscious_bath',minPL:5,maxPL:5,dur:500,x:52,y:82},
+  // TOILET
+  {id:129,name:'坐馬桶',icon:'🚽',room:'bath',furniture:'toilet',pose:'sit_toilet',minPL:0,maxPL:0,dur:120,x:8,y:67},
+  {id:130,name:'洗手',icon:'🚰',room:'bath',furniture:'toilet',pose:'reach',minPL:0,maxPL:0,dur:80,x:8,y:67},
+  {id:131,name:'整理頭髮',icon:'💇',room:'bath',furniture:'toilet',pose:'reach',minPL:0,maxPL:0,dur:160,x:8,y:67},
+  {id:132,name:'坐馬桶很久',icon:'🚽',room:'bath',furniture:'toilet',pose:'sit_toilet',minPL:2,maxPL:3,dur:200,x:8,y:67},
+  {id:133,name:'浴室地上坐著哭',icon:'💔',room:'bath',furniture:'toilet',pose:'sit_cry',minPL:3,maxPL:4,dur:300,x:8,y:67},
+  // MIRROR
+  {id:134,name:'浴室鏡前整理',icon:'🪞',room:'bath',furniture:'mirror',pose:'mirror',minPL:0,maxPL:0,dur:180,x:27,y:68},
+  {id:135,name:'鏡前臭美',icon:'😍',room:'bath',furniture:'mirror',pose:'mirror',minPL:0,maxPL:0,dur:200,x:27,y:68},
+  {id:136,name:'刷牙洗臉',icon:'🪥',room:'bath',furniture:'mirror',pose:'brush',minPL:0,maxPL:0,dur:150,x:27,y:68},
+  {id:137,name:'刷牙刷很久',icon:'🪥',room:'bath',furniture:'mirror',pose:'brush',minPL:1,maxPL:2,dur:160,x:27,y:68},
+  {id:138,name:'鏡前發呆',icon:'💭',room:'bath',furniture:'mirror',pose:'stare',minPL:1,maxPL:2,dur:200,x:27,y:68},
+  {id:139,name:'鏡前崩潰',icon:'😭',room:'bath',furniture:'mirror',pose:'cry',minPL:3,maxPL:4,dur:280,x:27,y:68},
+  // SHOWER
+  {id:140,name:'快樂淋浴',icon:'🚿',room:'bath',furniture:'shower',pose:'shower',minPL:0,maxPL:0,dur:200,x:58,y:65},
+  {id:141,name:'洗頭',icon:'💆',room:'bath',furniture:'shower',pose:'shower',minPL:0,maxPL:0,dur:180,x:58,y:65},
+  {id:142,name:'熱水放鬆',icon:'🌊',room:'bath',furniture:'shower',pose:'shower',minPL:0,maxPL:1,dur:220,x:58,y:65},
+  {id:143,name:'快速洗澡',icon:'🚿',room:'bath',furniture:'shower',pose:'shower',minPL:1,maxPL:2,dur:160,x:58,y:65},
+  {id:144,name:'冷水淋身體',icon:'🧊',room:'bath',furniture:'shower',pose:'cold_shower',minPL:2,maxPL:3,dur:200,x:58,y:65},
+  {id:145,name:'浴室暈眩',icon:'🌑',room:'bath',furniture:'shower',pose:'dizzy',minPL:3,maxPL:4,dur:280,x:58,y:65},
+  // BATH GENERAL
+  {id:146,name:'浴室慢慢走',icon:'🚶',room:'bath',furniture:'any',pose:'walk',minPL:0,maxPL:0,dur:160,x:20,y:72},
+  {id:147,name:'浴室跳舞',icon:'💃',room:'bath',furniture:'any',pose:'dance',minPL:0,maxPL:0,dur:180,x:20,y:72},
+  {id:148,name:'浴室地上爬行',icon:'🐛',room:'bath',furniture:'any',pose:'crawl',minPL:3,maxPL:4,dur:250,x:20,y:72},
+  {id:149,name:'浴室地上顫抖',icon:'🌡️',room:'bath',furniture:'any',pose:'shiver',minPL:4,maxPL:5,dur:350,x:20,y:72},
+  {id:150,name:'浴室地上靜止',icon:'🥀',room:'bath',furniture:'any',pose:'still_bath',minPL:5,maxPL:5,dur:500,x:20,y:72},
+  // BED
+  {id:151,name:'快樂入睡',icon:'😴',room:'bed',furniture:'bed',pose:'sleep',minPL:0,maxPL:0,dur:450,x:112,y:80},
+  {id:152,name:'床上看書',icon:'📕',room:'bed',furniture:'bed',pose:'read_bed',minPL:0,maxPL:0,dur:280,x:112,y:80},
+  {id:153,name:'側身睡覺',icon:'💤',room:'bed',furniture:'bed',pose:'sleep',minPL:0,maxPL:0,dur:400,x:112,y:80},
+  {id:154,name:'仰面睡覺',icon:'💤',room:'bed',furniture:'bed',pose:'sleep',minPL:0,maxPL:0,dur:400,x:112,y:80},
+  {id:155,name:'床上伸懶腰',icon:'🧘',room:'bed',furniture:'bed',pose:'stretch',minPL:0,maxPL:0,dur:120,x:112,y:80},
+  {id:156,name:'床上說夢話',icon:'💬',room:'bed',furniture:'bed',pose:'sleep',minPL:0,maxPL:0,dur:350,x:112,y:80},
+  {id:157,name:'翻身睡不好',icon:'😣',room:'bed',furniture:'bed',pose:'restless_sleep',minPL:1,maxPL:2,dur:380,x:112,y:80},
+  {id:158,name:'坐床上發呆',icon:'🏠',room:'bed',furniture:'bed',pose:'sit',minPL:1,maxPL:2,dur:250,x:112,y:80},
+  {id:159,name:'躲在被窩裡',icon:'🛌',room:'bed',furniture:'bed',pose:'hide_blanket',minPL:2,maxPL:3,dur:320,x:112,y:80},
+  {id:160,name:'坐床低頭不語',icon:'😞',room:'bed',furniture:'bed',pose:'sit_bed_sad',minPL:2,maxPL:3,dur:280,x:112,y:80},
+  {id:161,name:'做噩夢',icon:'😱',room:'bed',furniture:'bed',pose:'nightmare',minPL:2,maxPL:3,dur:300,x:112,y:80},
+  {id:162,name:'床上呻吟',icon:'😣',room:'bed',furniture:'bed',pose:'moan_bed',minPL:3,maxPL:4,dur:380,x:112,y:80},
+  {id:163,name:'用枕頭悶住',icon:'😵',room:'bed',furniture:'bed',pose:'hide_face',minPL:3,maxPL:4,dur:280,x:112,y:80},
+  {id:164,name:'抱枕頭使勁抓',icon:'🧿',room:'bed',furniture:'bed',pose:'hug_pillow',minPL:3,maxPL:4,dur:300,x:112,y:80},
+  {id:165,name:'床上使勁抓床單',icon:'🛏️',room:'bed',furniture:'bed',pose:'grip_sheet',minPL:4,maxPL:4,dur:380,x:112,y:80},
+  {id:166,name:'倒在床上不動',icon:'🫯',room:'bed',furniture:'bed',pose:'collapse_bed',minPL:4,maxPL:4,dur:450,x:112,y:80},
+  {id:167,name:'床上輕輕喘息',icon:'🥵',room:'bed',furniture:'bed',pose:'breathing',minPL:4,maxPL:5,dur:500,x:112,y:80},
+  {id:168,name:'床上無反應',icon:'⚰️',room:'bed',furniture:'bed',pose:'no_response',minPL:5,maxPL:5,dur:600,x:112,y:80},
+  {id:169,name:'對著天花板流淚',icon:'💧',room:'bed',furniture:'bed',pose:'tears_ceiling',minPL:4,maxPL:5,dur:450,x:112,y:80},
+  {id:170,name:'床上祈禱',icon:'🙏',room:'bed',furniture:'bed',pose:'pray',minPL:4,maxPL:5,dur:400,x:112,y:80},
+  {id:171,name:'床邊祈禱',icon:'🙏',room:'bed',furniture:'bed',pose:'pray',minPL:5,maxPL:5,dur:400,x:112,y:80},
+  {id:172,name:'床上用最後力氣爬',icon:'🪢',room:'bed',furniture:'bed',pose:'last_crawl',minPL:5,maxPL:5,dur:400,x:112,y:80},
+  // WARDROBE
+  {id:173,name:'開心整理衣櫃',icon:'👔',room:'bed',furniture:'wardrobe',pose:'reach',minPL:0,maxPL:0,dur:250,x:147,y:65},
+  {id:174,name:'試穿衣服',icon:'👗',room:'bed',furniture:'wardrobe',pose:'reach',minPL:0,maxPL:0,dur:200,x:147,y:65},
+  {id:175,name:'掛衣服',icon:'👔',room:'bed',furniture:'wardrobe',pose:'reach',minPL:0,maxPL:0,dur:180,x:147,y:65},
+  {id:176,name:'翻找衣服',icon:'👕',room:'bed',furniture:'wardrobe',pose:'reach',minPL:0,maxPL:1,dur:160,x:147,y:65},
+  {id:177,name:'顫抖開衣櫃',icon:'👔',room:'bed',furniture:'wardrobe',pose:'reach',minPL:3,maxPL:4,dur:180,x:147,y:65},
+  {id:178,name:'扶衣櫃站著',icon:'🧱',room:'bed',furniture:'wardrobe',pose:'lean',minPL:3,maxPL:4,dur:200,x:147,y:65},
+  // DESK
+  {id:179,name:'書桌前看書',icon:'📖',room:'bed',furniture:'desk',pose:'read',minPL:0,maxPL:0,dur:280,x:93,y:87},
+  {id:180,name:'書桌前寫字',icon:'✏️',room:'bed',furniture:'desk',pose:'sit',minPL:0,maxPL:0,dur:220,x:93,y:87},
+  {id:181,name:'整理書桌',icon:'🧹',room:'bed',furniture:'desk',pose:'reach',minPL:0,maxPL:0,dur:160,x:93,y:87},
+  {id:182,name:'書桌前做作業',icon:'📝',room:'bed',furniture:'desk',pose:'sit',minPL:0,maxPL:0,dur:300,x:93,y:87},
+  {id:183,name:'書桌前站著發呆',icon:'💭',room:'bed',furniture:'desk',pose:'stand',minPL:1,maxPL:2,dur:200,x:93,y:87},
+  {id:184,name:'趴在書桌前',icon:'🫠',room:'bed',furniture:'desk',pose:'lie',minPL:2,maxPL:3,dur:220,x:93,y:87},
+  {id:185,name:'扶書桌喘氣',icon:'🥵',room:'bed',furniture:'desk',pose:'lean',minPL:3,maxPL:4,dur:180,x:93,y:87},
+  // NIGHTSTAND
+  {id:186,name:'床頭拿書',icon:'📖',room:'bed',furniture:'nightstand',pose:'reach',minPL:0,maxPL:0,dur:80,x:89,y:83},
+  {id:187,name:'床頭拿手機',icon:'📱',room:'bed',furniture:'nightstand',pose:'reach',minPL:0,maxPL:0,dur:60,x:89,y:83},
+  {id:188,name:'床頭放水杯',icon:'💧',room:'bed',furniture:'nightstand',pose:'reach',minPL:0,maxPL:0,dur:60,x:89,y:83},
+  {id:189,name:'床頭開檯燈',icon:'💡',room:'bed',furniture:'nightstand',pose:'reach',minPL:0,maxPL:0,dur:60,x:89,y:83},
+  {id:190,name:'床頭關檯燈',icon:'💡',room:'bed',furniture:'nightstand',pose:'reach',minPL:0,maxPL:0,dur:60,x:89,y:83},
+  {id:191,name:'床頭拿鬧鐘',icon:'⏰',room:'bed',furniture:'nightstand',pose:'reach',minPL:0,maxPL:1,dur:60,x:89,y:83},
+  {id:192,name:'手機充電',icon:'🔋',room:'bed',furniture:'nightstand',pose:'reach',minPL:0,maxPL:1,dur:120,x:89,y:83},
+  {id:193,name:'盯著手機發呆',icon:'📱',room:'bed',furniture:'nightstand',pose:'stare_phone',minPL:2,maxPL:3,dur:200,x:89,y:83},
+  {id:194,name:'盯著鬧鐘算時間',icon:'⏰',room:'bed',furniture:'nightstand',pose:'watch_clock',minPL:3,maxPL:5,dur:200,x:89,y:83},
+  // BED LAMP
+  {id:195,name:'檯燈下看書',icon:'📖',room:'bed',furniture:'lamp',pose:'read',minPL:0,maxPL:0,dur:280,x:91,y:80},
+  {id:196,name:'關檯燈',icon:'💡',room:'bed',furniture:'lamp',pose:'reach',minPL:0,maxPL:0,dur:60,x:91,y:80},
+  {id:197,name:'欣賞檯燈光暈',icon:'✨',room:'bed',furniture:'lamp',pose:'look',minPL:0,maxPL:0,dur:160,x:91,y:80},
+  {id:198,name:'檯燈下發呆',icon:'💭',room:'bed',furniture:'lamp',pose:'stare',minPL:1,maxPL:2,dur:200,x:91,y:80},
+  {id:199,name:'檯燈下顫抖',icon:'🌡️',room:'bed',furniture:'lamp',pose:'shiver',minPL:3,maxPL:4,dur:280,x:91,y:80},
+  // BED WINDOW
+  {id:200,name:'窗邊看風景',icon:'🌙',room:'bed',furniture:'window',pose:'look',minPL:0,maxPL:0,dur:200,x:86,y:62},
+  {id:201,name:'開窗戶透氣',icon:'🌬️',room:'bed',furniture:'window',pose:'reach',minPL:0,maxPL:0,dur:100,x:86,y:62},
+  {id:202,name:'關窗戶',icon:'🌧️',room:'bed',furniture:'window',pose:'reach',minPL:0,maxPL:0,dur:80,x:86,y:62},
+  {id:203,name:'窗邊發呆',icon:'💭',room:'bed',furniture:'window',pose:'look',minPL:1,maxPL:2,dur:200,x:86,y:62},
+  {id:204,name:'窗邊深呼吸',icon:'🌬️',room:'bed',furniture:'window',pose:'breath',minPL:2,maxPL:3,dur:160,x:86,y:62},
+  // SLIPPERS
+  {id:205,name:'穿拖鞋',icon:'🥿',room:'bed',furniture:'slippers',pose:'reach',minPL:0,maxPL:0,dur:80,x:100,y:93},
+  {id:206,name:'放拖鞋',icon:'🥿',room:'bed',furniture:'slippers',pose:'reach',minPL:0,maxPL:0,dur:60,x:100,y:93},
+  {id:207,name:'穿鞋出門準備',icon:'👟',room:'bed',furniture:'slippers',pose:'reach',minPL:0,maxPL:0,dur:120,x:100,y:93},
+  {id:208,name:'蹲下穿鞋困難',icon:'🥿',room:'bed',furniture:'slippers',pose:'kneel',minPL:2,maxPL:3,dur:160,x:100,y:93},
+  // CLOTHES PILE
+  {id:209,name:'整理衣服堆',icon:'👕',room:'bed',furniture:'clothes_pile',pose:'reach',minPL:0,maxPL:0,dur:200,x:130,y:88},
+  {id:210,name:'拿乾淨衣服',icon:'👔',room:'bed',furniture:'clothes_pile',pose:'reach',minPL:0,maxPL:0,dur:120,x:130,y:88},
+  {id:211,name:'無力整理衣服',icon:'👕',room:'bed',furniture:'clothes_pile',pose:'reach',minPL:2,maxPL:3,dur:180,x:130,y:88},
+  // BED GENERAL
+  {id:212,name:'臥室慢慢走',icon:'🚶',room:'bed',furniture:'any',pose:'walk',minPL:0,maxPL:0,dur:200,x:110,y:80},
+  {id:213,name:'臥室伸展',icon:'🧘',room:'bed',furniture:'any',pose:'stretch',minPL:0,maxPL:0,dur:120,x:110,y:80},
+  {id:214,name:'臥室做瑜伽',icon:'🧘',room:'bed',furniture:'any',pose:'yoga',minPL:0,maxPL:0,dur:200,x:110,y:80},
+  {id:215,name:'在床上跳',icon:'🛏️',room:'bed',furniture:'any',pose:'jump',minPL:0,maxPL:0,dur:140,x:110,y:80},
+  {id:216,name:'床邊抱著自己',icon:'🫂',room:'bed',furniture:'any',pose:'hug_self',minPL:3,maxPL:4,dur:400,x:110,y:80},
+  {id:217,name:'臥室顫抖',icon:'🌡️',room:'bed',furniture:'any',pose:'shiver',minPL:4,maxPL:5,dur:350,x:110,y:80},
+  // UNIVERSAL COPING
+  {id:218,name:'深呼吸冷靜',icon:'🌬️',room:'any',furniture:'any',pose:'breath',minPL:1,maxPL:3,dur:160,x:40,y:42},
+  {id:219,name:'捂著疼的地方',icon:'🤲',room:'any',furniture:'any',pose:'cover_pain',minPL:1,maxPL:4,dur:200,x:40,y:42},
+  {id:220,name:'輕輕按摩',icon:'💆',room:'any',furniture:'any',pose:'massage',minPL:2,maxPL:3,dur:180,x:40,y:42},
+  {id:221,name:'用冰袋敷',icon:'🧊',room:'any',furniture:'any',pose:'ice',minPL:3,maxPL:4,dur:220,x:40,y:42},
+  {id:222,name:'盯著時鐘',icon:'⏰',room:'any',furniture:'any',pose:'watch_clock',minPL:3,maxPL:5,dur:200,x:40,y:42},
+  {id:223,name:'等待疼痛過去',icon:'⏳',room:'any',furniture:'any',pose:'wait',minPL:3,maxPL:5,dur:350,x:40,y:42},
+  {id:224,name:'發呆等待奇蹟',icon:'✨',room:'any',furniture:'any',pose:'stare_empty',minPL:4,maxPL:5,dur:380,x:40,y:42},
+  {id:225,name:'求救打電話',icon:'📞',room:'any',furniture:'any',pose:'call',minPL:4,maxPL:5,dur:250,x:40,y:42},
+  {id:226,name:'向周圍人求救',icon:'🆘',room:'any',furniture:'any',pose:'cry_help',minPL:4,maxPL:5,dur:350,x:40,y:42},
+  {id:227,name:'低頭祈禱',icon:'🙏',room:'any',furniture:'any',pose:'pray',minPL:4,maxPL:5,dur:400,x:40,y:42},
+  {id:228,name:'用頭撞牆',icon:'🤕',room:'any',furniture:'any',pose:'headbang',minPL:3,maxPL:4,dur:200,x:40,y:42},
+  {id:229,name:'用力抓地板',icon:'🪛',room:'any',furniture:'any',pose:'grip_sheet',minPL:4,maxPL:5,dur:300,x:40,y:42},
+  // WALL INTERACTIONS
+  {id:230,name:'頭暈靠牆',icon:'🧱',room:'living',furniture:'wall',pose:'lean_wall',minPL:1,maxPL:2,dur:160,x:5,y:42},
+  {id:231,name:'扶牆站著',icon:'🧱',room:'living',furniture:'wall',pose:'lean',minPL:2,maxPL:3,dur:180,x:5,y:42},
+  {id:232,name:'蹲在牆角',icon:'🧱',room:'living',furniture:'wall',pose:'squat',minPL:2,maxPL:3,dur:200,x:5,y:42},
+  {id:233,name:'牆角抱頭哭',icon:'😭',room:'living',furniture:'wall',pose:'cry',minPL:3,maxPL:4,dur:280,x:5,y:42},
+  {id:234,name:'靠牆滑下',icon:'🧱',room:'living',furniture:'wall',pose:'slide_down',minPL:4,maxPL:5,dur:250,x:5,y:42},
+  // DOOR TRANSITIONS
+  {id:235,name:'客廳→廚房',icon:'🚶',room:'living',furniture:'door',pose:'walk',minPL:0,maxPL:0,dur:150,x:82,y:28},
+  {id:236,name:'客廳→浴室',icon:'🚶',room:'living',furniture:'door',pose:'walk',minPL:0,maxPL:0,dur:120,x:39,y:57},
+  {id:237,name:'廚房→客廳',icon:'🚶',room:'kitchen',furniture:'door',pose:'walk',minPL:0,maxPL:0,dur:150,x:78,y:28},
+  {id:238,name:'浴室→客廳',icon:'🚶',room:'bath',furniture:'door',pose:'walk',minPL:0,maxPL:0,dur:120,x:39,y:53},
+  {id:239,name:'艱難穿門',icon:'🚶',room:'living',furniture:'door',pose:'limping',minPL:3,maxPL:4,dur:200,x:39,y:57},
+  {id:240,name:'爬行穿門',icon:'🐛',room:'kitchen',furniture:'door',pose:'crawl',minPL:4,maxPL:5,dur:250,x:78,y:28},
+  // SPECIAL SCENES
+  {id:241,name:'客廳開派對',icon:'🎉',room:'living',furniture:'any',pose:'dance',minPL:0,maxPL:0,dur:350,x:40,y:42},
+  {id:242,name:'客廳慶功',icon:'🎊',room:'living',furniture:'any',pose:'clap',minPL:0,maxPL:0,dur:280,x:40,y:42},
+  {id:243,name:'客廳看雨',icon:'🌧️',room:'living',furniture:'window',pose:'look',minPL:0,maxPL:0,dur:200,x:6,y:8},
+  {id:244,name:'客廳慶功跳舞',icon:'💃',room:'living',furniture:'any',pose:'dance',minPL:0,maxPL:0,dur:300,x:40,y:42},
+  {id:245,name:'沙發上跳',icon:'🛋️',room:'living',furniture:'sofa',pose:'jump',minPL:0,maxPL:0,dur:140,x:10,y:42},
+  {id:246,name:'客廳玩遙控車',icon:'🚗',room:'living',furniture:'carpet',pose:'walk',minPL:0,maxPL:0,dur:180,x:15,y:51},
+  {id:247,name:'廚房試吃',icon:'🍳',room:'kitchen',furniture:'stove',pose:'taste',minPL:0,maxPL:0,dur:120,x:125,y:25},
+  {id:248,name:'廚房慶功宴',icon:'🎂',room:'kitchen',furniture:'dining_table',pose:'eat',minPL:0,maxPL:0,dur:350,x:95,y:40},
+  {id:249,name:'廚房布置餐桌',icon:'🍽️',room:'kitchen',furniture:'dining_table',pose:'reach',minPL:0,maxPL:0,dur:200,x:95,y:40},
+  {id:250,name:'浴室鏡前化妝',icon:'💄',room:'bath',furniture:'mirror',pose:'mirror',minPL:0,maxPL:0,dur:300,x:27,y:68},
+  {id:251,name:'浴室泡澡放鬆',icon:'🛁',room:'bath',furniture:'bathtub',pose:'bath',minPL:0,maxPL:0,dur:400,x:52,y:82},
+  {id:252,name:'臥室慶功睡',icon:'😴',room:'bed',furniture:'bed',pose:'sleep',minPL:0,maxPL:0,dur:500,x:112,y:80},
+  {id:253,name:'床上看電影',icon:'🎬',room:'bed',furniture:'bed',pose:'read_bed',minPL:0,maxPL:0,dur:400,x:112,y:80},
+  {id:254,name:'臥室看夜景',icon:'🌃',room:'bed',furniture:'window',pose:'look',minPL:0,maxPL:0,dur:250,x:86,y:62},
+  {id:255,name:'客廳踢足球',icon:'⚽',room:'living',furniture:'carpet',pose:'kick',minPL:0,maxPL:0,dur:200,x:15,y:51},
+  {id:256,name:'客廳玩遊戲王',icon:'🃏',room:'living',furniture:'table',pose:'sit',minPL:0,maxPL:0,dur:280,x:57,y:51},
+  {id:257,name:'廚房烤麵包',icon:'🍞',room:'kitchen',furniture:'microwave',pose:'reach',minPL:0,maxPL:0,dur:180,x:105,y:8},
+  {id:258,name:'臥室看相冊',icon:'📷',room:'bed',furniture:'desk',pose:'read',minPL:0,maxPL:0,dur:350,x:93,y:87},
+  {id:259,name:'客廳掛畫',icon:'🖼️',room:'living',furniture:'wall',pose:'reach',minPL:0,maxPL:0,dur:150,x:50,y:15},
+  {id:260,name:'客廳拼圖',icon:'🧩',room:'living',furniture:'carpet',pose:'kneel',minPL:0,maxPL:0,dur:300,x:15,y:51},
+  {id:261,name:'客廳鋼琴',icon:'🎹',room:'living',furniture:'any',pose:'dance',minPL:0,maxPL:0,dur:280,x:65,y:42},
+  {id:262,name:'客廳壁扇',icon:'🍃',room:'living',furniture:'wall',pose:'reach',minPL:0,maxPL:0,dur:80,x:50,y:15},
+  // MORE LIVING
+  {id:263,name:'快樂站著唱歌',icon:'🎤',room:'living',furniture:'any',pose:'sing',minPL:0,maxPL:0,dur:200,x:40,y:42},
+  {id:264,name:'客廳踢鞋子',icon:'👟',room:'living',furniture:'any',pose:'kick',minPL:0,maxPL:0,dur:120,x:40,y:42},
+  {id:265,name:'客廳拿拖鞋',icon:'🥿',room:'living',furniture:'any',pose:'reach',minPL:0,maxPL:0,dur:80,x:40,y:42},
+  {id:266,name:'客廳抱著抱枕',icon:'🧸',room:'living',furniture:'sofa',pose:'hug_pillow',minPL:0,maxPL:0,dur:200,x:10,y:42},
+  {id:267,name:'客廳看漫畫大笑',icon:'😂',room:'living',furniture:'sofa',pose:'sit',minPL:0,maxPL:0,dur:250,x:10,y:42},
+  {id:268,name:'客廳打哈欠',icon:'😪',room:'living',furniture:'sofa',pose:'stretch',minPL:0,maxPL:0,dur:100,x:10,y:42},
+  {id:269,name:'客廳自言自語',icon:'💬',room:'living',furniture:'any',pose:'talk',minPL:0,maxPL:0,dur:180,x:40,y:42},
+  {id:270,name:'客廳深呼吸',icon:'🌬️',room:'living',furniture:'any',pose:'breath',minPL:1,maxPL:2,dur:150,x:40,y:42},
+  {id:271,name:'客廳檢查傷口',icon:'🩹',room:'living',furniture:'any',pose:'reach',minPL:2,maxPL:3,dur:180,x:40,y:42},
+  {id:272,name:'客廳等待主人',icon:'🐕',room:'living',furniture:'any',pose:'stand',minPL:0,maxPL:0,dur:250,x:40,y:42},
+  // MORE KITCHEN
+  {id:273,name:'廚房走來走去',icon:'🚶',room:'kitchen',furniture:'any',pose:'pacing',minPL:1,maxPL:2,dur:200,x:110,y:30},
+  {id:274,name:'廚房走動呻吟',icon:'😣',room:'kitchen',furniture:'any',pose:'wince_walk',minPL:2,maxPL:3,dur:220,x:110,y:30},
+  {id:275,name:'廚房拖行',icon:'🪑',room:'kitchen',furniture:'any',pose:'drag',minPL:3,maxPL:4,dur:250,x:110,y:30},
+  {id:276,name:'廚房地上顫抖',icon:'⚡',room:'kitchen',furniture:'any',pose:'floor_tremble',minPL:4,maxPL:5,dur:400,x:110,y:30},
+  // MORE BATH
+  {id:277,name:'浴室洗完離開',icon:'🚿',room:'bath',furniture:'any',pose:'walk',minPL:0,maxPL:0,dur:120,x:20,y:72},
+  {id:278,name:'浴室角落蹲',icon:'🧱',room:'bath',furniture:'any',pose:'crouch',minPL:3,maxPL:4,dur:200,x:20,y:72},
+  // MORE BED
+  {id:279,name:'房間走動舒緩',icon:'🚶',room:'bed',furniture:'any',pose:'pacing',minPL:1,maxPL:2,dur:200,x:110,y:80},
+  {id:280,name:'床上走動不便',icon:'🛏️',room:'bed',furniture:'any',pose:'limping',minPL:3,maxPL:4,dur:250,x:110,y:80},
+  {id:281,name:'床上顫抖蜷縮',icon:'⚡',room:'bed',furniture:'any',pose:'shiver',minPL:4,maxPL:5,dur:400,x:110,y:80},
+  // ADDITIONAL
+  {id:282,name:'客廳整理遙控器',icon:'📺',room:'living',furniture:'table',pose:'reach',minPL:0,maxPL:0,dur:80,x:57,y:51},
+  {id:283,name:'客廳欣賞花瓶',icon:'🏺',room:'living',furniture:'window',pose:'look',minPL:0,maxPL:0,dur:140,x:6,y:8},
+  {id:284,name:'客廳擦地板',icon:'🧹',room:'living',furniture:'carpet',pose:'kneel',minPL:0,maxPL:1,dur:200,x:15,y:51},
+  {id:285,name:'客廳倒垃圾',icon:'🗑️',room:'living',furniture:'any',pose:'reach',minPL:0,maxPL:0,dur:120,x:40,y:42},
+  {id:286,name:'廚房打雞蛋',icon:'🥚',room:'kitchen',furniture:'stove',pose:'cook',minPL:0,maxPL:0,dur:160,x:125,y:25},
+  {id:287,name:'廚房切菜',icon:'🥒',room:'kitchen',furniture:'counter',pose:'cook',minPL:0,maxPL:0,dur:220,x:90,y:5},
+  {id:288,name:'廚房拿碗',icon:'🍽️',room:'kitchen',furniture:'counter',pose:'reach',minPL:0,maxPL:0,dur:80,x:90,y:5},
+  {id:289,name:'廚房倒水',icon:'💧',room:'kitchen',furniture:'sink',pose:'drink',minPL:0,maxPL:0,dur:100,x:108,y:30},
+  {id:290,name:'浴室洗衣服',icon:'👕',room:'bath',furniture:'any',pose:'reach',minPL:0,maxPL:0,dur:250,x:20,y:72},
+  {id:291,name:'浴室倒垃圾',icon:'🗑️',room:'bath',furniture:'any',pose:'reach',minPL:0,maxPL:0,dur:100,x:20,y:72},
+  {id:292,name:'浴室開窗戶',icon:'🌬️',room:'bath',furniture:'any',pose:'reach',minPL:0,maxPL:1,dur:80,x:20,y:72},
+  {id:293,name:'臥室整理書桌',icon:'📚',room:'bed',furniture:'desk',pose:'reach',minPL:0,maxPL:0,dur:200,x:93,y:87},
+  {id:294,name:'臥室拿睡衣',icon:'🩱',room:'bed',furniture:'wardrobe',pose:'reach',minPL:0,maxPL:0,dur:120,x:147,y:65},
+  {id:295,name:'臥室拉窗帘',icon:'🪟',room:'bed',furniture:'window',pose:'reach',minPL:0,maxPL:0,dur:80,x:86,y:62},
+  {id:296,name:'臥室給植物澆水',icon:'🌻',room:'bed',furniture:'window',pose:'water',minPL:0,maxPL:0,dur:140,x:86,y:62},
+  {id:297,name:'臥室打掃',icon:'🧹',room:'bed',furniture:'any',pose:'reach',minPL:0,maxPL:1,dur:200,x:110,y:80},
+  {id:298,name:'客廳沙發上發呆',icon:'💭',room:'living',furniture:'sofa',pose:'stare',minPL:1,maxPL:2,dur:250,x:10,y:42},
+  {id:299,name:'客廳牆上掛時鐘',icon:'⏰',room:'living',furniture:'wall',pose:'reach',minPL:0,maxPL:0,dur:120,x:50,y:15},
+  {id:300,name:'客廳踢拖鞋進門',icon:'🥿',room:'living',furniture:'any',pose:'kick',minPL:0,maxPL:0,dur:100,x:40,y:42},
+];
+
+// ═══ ROOM BOUNDARIES (PX coords, indoor only) ═══
+const ROOM_BOUNDS={
+  living:  {xMin:2,xMax:77,yMin:2,yMax:52},
+  kitchen: {xMin:83,xMax:155,yMin:2,yMax:52},
+  bath:    {xMin:2,xMax:77,yMin:58,yMax:93},
+  bed:     {xMin:83,xMax:155,yMin:58,yMax:93},
+};
+
+// ═══ FURNITURE COLLISION BOXES ═══
+const FURNITURE_BOXES={
+  sofa:     {room:'living',  x:4, y:46, w:24, h:8},
+  tv_unit:  {room:'living',  x:72,y:6,  w:14, h:12},
+  bookshelf:{room:'living',  x:2, y:20, w:8,  h:18},
+  coffee_table:{room:'living',x:54,y:49, w:10, h:6},
+  plant:    {room:'living',  x:69,y:44, w:6,  h:6},
+  lamp:     {room:'living',  x:1, y:42, w:4,  h:12},
+  rug:      {room:'living',  x:7, y:49, w:20, h:5},
+  fridge:   {room:'kitchen', x:84,y:12, w:14, h:24},
+  counter:  {room:'kitchen', x:83,y:0,  w:32, h:6},
+  stove:    {room:'kitchen', x:119,y:20,w:17, h:18},
+  sink:     {room:'kitchen', x:104,y:24,w:10, h:12},
+  dining_t: {room:'kitchen', x:90,y:36, w:18, h:12},
+  toilet:   {room:'bath',   x:5, y:59, w:12, h:14},
+  bathtub:  {room:'bath',   x:44,y:74, w:30, h:22},
+  washbasin:{room:'bath',   x:22,y:60, w:16, h:14},
+  shower:   {room:'bath',   x:55,y:60, w:10, h:10},
+  bed:      {room:'bed',    x:100,y:76,w:37, h:17},
+  wardrobe: {room:'bed',   x:139,y:57,w:20, h:24},
+  desk:     {room:'bed',    x:88,y:82, w:18, h:12},
+  nightstand:{room:'bed',   x:86,y:82, w:8,  h:8},
+};
+
+// ═══ DOORS ═══
+const DOORS=[
+  {x:80,y:27,from:'living',to:'kitchen'},
+  {x:38,y:55,from:'living',to:'bath'},
+  {x:78,y:27,from:'kitchen',to:'living'},
+  {x:116,y:55,from:'kitchen',to:'bed'},
+  {x:39,y:53,from:'bath',to:'living'},
+  {x:77,y:70,from:'bath',to:'bed'},
+  {x:115,y:53,from:'bed',to:'kitchen'},
+  {x:82,y:70,from:'bed',to:'bath'},
+];
+
+function collides(x,y,room){
+  const cw=6,ch=10;
+  for(const key in FURNITURE_BOXES){
+    const b=FURNITURE_BOXES[key];
+    if(b.room!==room)continue;
+    if(x+cw>b.x+1&&x<b.x+b.w-1&&y+ch>b.y+1&&y<b.y+b.h-1)return key;
+  }
+  return null;
+}
+
+function clamp(x,y,room){
+  const b=ROOM_BOUNDS[room];
+  return{ x:Math.max(b.xMin,Math.min(b.xMax-6,x)), y:Math.max(b.yMin,Math.min(b.yMax-10,y)) };
+}
+
+// ═══ CHARACTER STATE ═══
+let char={
+  x:40,y:40,facing:1,frame:0,
+  activity:null,activityTimer:0,activityDef:null,
+  currentRoom:'living',
+  isMoving:false,walkTarget:null,walkSpeed:0.4,
+};
+let gameState={painLevel:0,feltPain:0,anxiety:0,emotion:'平靜',emotionLogs:[],isRestless:false};
+let currentView='all';
+let tick=0;
+
+function pxRect(x,y,w,h,color){
+  ctx.fillStyle=color;
+  ctx.fillRect(Math.round(x*PX),Math.round(y*PX),Math.round(w*PX),Math.round(h*PX));
+}
+
+function drawFloor(pl){
+  const fa=pl>=3?'#1e1e30':C.floorA,fb=pl>=3?'#181828':C.floorB;
+  for(let ry=0;ry<100;ry++)for(let rx=0;rx<160;rx++){
+    ctx.fillStyle=(rx+ry)%2===0?fa:fb;
+    ctx.fillRect(rx*PX,ry*PX,PX,PX);
+  }
+}
+function drawWalls(pl){
+  const info=PAIN_INFO[Math.min(pl,5)],wc=info.wallC;
+  pxRect(0,0,160,2,wc);pxRect(0,0,2,100,wc);pxRect(158,0,2,100,wc);pxRect(0,98,160,2,wc);
+  pxRect(80,0,2,55,wc);pxRect(0,55,80,2,wc);pxRect(80,55,80,2,wc);pxRect(80,55,2,45,wc);
+}
+function drawWindows(pl){
+  const info=PAIN_INFO[Math.min(pl,5)],wc=info.winC,wf=pl>=4?'#333':'#4455aa';
+  pxRect(3,3,16,12,wc);pxRect(3,3,16,1,wf);pxRect(3,3,1,12,wf);pxRect(18,3,1,12,wf);pxRect(3,14,16,1,wf);pxRect(10,3,1,12,wf);pxRect(3,8,16,1,wf);
+  pxRect(83,3,12,10,wc);pxRect(83,3,12,1,wf);pxRect(83,3,1,10,wf);pxRect(94,3,1,10,wf);pxRect(83,12,12,1,wf);pxRect(88,3,1,10,wf);pxRect(83,7,12,1,wf);
+}
+function drawDoors(pl){
+  pxRect(78,24,6,6,'#0d0d2b');pxRect(35,53,8,4,'#0d0d2b');pxRect(114,53,6,4,'#0d0d2b');pxRect(78,70,6,4,'#0d0d2b');
+}
+
+function drawLivingRoom(pl){
+  const info=PAIN_INFO[Math.min(pl,5)];
+  const sofaC=pl>=4?'#2a3a50':(pl>=2?'#3a5070':C.sofa),sofaHi=pl>=3?'#3a4a60':C.sofaHi;
+  const rugC=pl>=3?'#3a2a4a':C.rug,tvGlow=info.tvGlow,lampC=info.lampColor;
+  pxRect(73,6,10,8,'#222');pxRect(74,7,8,5,tvGlow==='#000'?'#111':'#1a2a5a');pxRect(76,15,4,2,'#333');pxRect(72,16,12,3,'#3a2a1a');
+  pxRect(4,46,24,7,sofaC);pxRect(4,46,24,1,sofaHi);pxRect(4,46,1,7,sofaHi);pxRect(27,46,1,7,sofaHi);
+  pxRect(5,47,6,5,sofaHi);pxRect(13,47,6,5,sofaHi);pxRect(21,47,5,5,sofaHi);
+  pxRect(7,50,20,4,rugC);pxRect(8,50,18,1,'#7a5a8a');
+  pxRect(2,20,8,18,C.bookshelf);pxRect(2,20,8,1,'#8b5a33');
+  for(let r=0;r<4;r++)for(let c=0;c<3;c++){let bi=(r*3+c)%C.books.length;pxRect(3+c*2,21+r*4,2,3,C.books[bi]);}
+  if(pl<=2){pxRect(69,44,6,6,C.plantPot);pxRect(70,43,4,1,C.plantPotHi);if(pl===0){pxRect(68,38,4,5,C.plant);pxRect(72,37,4,5,'#3daa5e');}else{pxRect(68,39,4,4,'#1a5a30');pxRect(72,38,4,4,'#2a6a3a');}}else{pxRect(69,45,6,5,'#3a2a1a');}
+  pxRect(1,42,3,12,'#666');pxRect(1,41,4,1,lampC==='#000'?'#333':lampC);
+  if(lampC!=='#000'&&lampC!=='#221100'&&pl<=2){ctx.fillStyle=lampC;ctx.globalAlpha=0.12;ctx.fillRect(0*PX,36*PX,7*PX,8*PX);ctx.globalAlpha=1;}
+  pxRect(54,49,10,6,'#6b4423');pxRect(54,49,10,1,'#8b6443');
+  if(pl===0){pxRect(30,50,5,3,'#cc3333');pxRect(30,50,5,1,'#ee4444');}else if(pl===1){pxRect(30,50,5,3,'#883333');}
+  if(pl>=3){pxRect(10,2,1,6,C.crack);pxRect(11,4,1,4,C.crack);}
+  if(pl>=4){pxRect(60,1,1,7,C.crack);pxRect(62,2,1,5,C.crack);pxRect(20,0,1,4,C.crack);}
+  if(pl>=5){pxRect(30,1,2,8,C.crack);pxRect(45,0,1,6,C.crack);pxRect(40,30,3,3,'#050508');}
+}
+
+function drawKitchen(pl){
+  const info=PAIN_INFO[Math.min(pl,5)];
+  const cntC=pl>=3?'#4a3020':C.counter,cntHi=pl>=3?'#5a4030':'#c0a080';
+  const fC=pl>=4?'#556666':C.fridge,fHi=pl>=4?'#667777':'#bbccdd';
+  pxRect(83,0,32,6,cntC);pxRect(83,0,32,1,cntHi);pxRect(83,6,32,6,cntC);pxRect(83,6,32,1,cntHi);
+  pxRect(84,12,14,24,fC);pxRect(84,12,14,1,fHi);pxRect(84,12,1,24,fHi);pxRect(97,12,1,24,fHi);pxRect(84,22,14,1,fHi);pxRect(84,12,4,4,'#aabbcc');
+  pxRect(104,1,8,4,'#5a3a1a');pxRect(104,1,8,1,'#7a5a3a');
+  pxRect(119,20,17,18,'#333');pxRect(119,20,17,1,'#444');
+  if(pl<=3){pxRect(121,24,5,4,'#222');pxRect(129,24,5,4,'#222');if(pl===0){pxRect(122,25,3,2,'#ff6633');pxRect(130,25,3,2,'#ff6633');}else if(pl===1){pxRect(122,25,3,2,'#aa4422');}else{pxRect(122,25,3,2,'#553322');}}
+  pxRect(120,30,15,8,'#444');pxRect(125,31,5,1,'#666');
+  pxRect(104,24,10,12,'#556');pxRect(105,25,8,10,'#667');pxRect(107,22,4,3,'#888');pxRect(107,21,4,1,'#999');
+  if(pl===0){pxRect(90,2,5,2,'#ffaa44');pxRect(91,1,3,1,'#ee8833');pxRect(100,2,4,2,'#cc8844');}else if(pl===1){pxRect(90,2,5,2,'#aa7733');pxRect(100,2,4,2,'#aa6644');}else if(pl===2){pxRect(90,2,5,2,'#886633');pxRect(100,2,4,2,'#885544');}
+  if(pl>=3){pxRect(115,1,3,1,'#666');}
+  const wc=info.winC;
+  pxRect(130,3,14,10,wc);pxRect(130,3,14,1,'#4455aa');pxRect(130,3,1,10,'#4455aa');pxRect(143,3,1,10,'#4455aa');pxRect(130,12,14,1,'#4455aa');pxRect(136,3,1,10,'#4455aa');pxRect(130,7,14,1,'#4455aa');
+}
+
+function drawBathroom(pl){
+  const tC=pl>=4?'#aaaacc':C.toilet,bC=pl>=4?'#446688':C.bath,bHi=pl>=4?'#557799':C.bathHi,bWater=pl>=4?'#334455':C.bathWater;
+  pxRect(5,59,12,14,tC);pxRect(5,59,12,2,'#ddddee');pxRect(7,59,8,1,'#ccccee');pxRect(6,55,10,5,tC);pxRect(6,55,10,1,'#ddddee');pxRect(8,55,6,1,'#9999bb');pxRect(10,55,3,1,'#888');
+  pxRect(44,74,30,22,bC);pxRect(44,74,30,1,bHi);pxRect(44,74,1,22,bHi);pxRect(73,74,1,22,bHi);pxRect(44,95,30,1,bHi);
+  if(pl<=2){pxRect(45,86,28,8,bWater);if(pl===0){pxRect(47,84,4,2,'#aaeeff');pxRect(55,83,5,3,'#aaeeff');pxRect(63,85,4,2,'#aaeeff');}}
+  pxRect(55,60,6,10,'#888');pxRect(56,59,4,2,'#999');pxRect(54,60,2,8,'#888');
+  pxRect(22,60,16,14,'#556');pxRect(23,61,14,12,'#667');pxRect(29,57,3,5,'#888');
+  pxRect(22,47,16,12,'#6699bb');pxRect(22,47,16,1,'#5577aa');pxRect(22,47,1,12,'#5577aa');pxRect(37,47,1,12,'#5577aa');pxRect(22,58,16,1,'#5577aa');
+  if(pl<=2){pxRect(24,49,5,4,'#99ccee');}
+  pxRect(41,50,2,16,'#888');pxRect(41,50,8,2,'#999');
+  if(pl>=3){pxRect(0,88,40,12,'rgba(100,150,200,0.1)');}
+  if(pl>=4){pxRect(1,92,6,2,'#2a3a2a');pxRect(35,89,5,3,'#2a3a2a');}
+}
+
+function drawBedroom(pl){
+  const bdC=pl>=4?'#3a2050':C.bed,blC=pl>=4?'#2a1030':C.blanket,blHi=pl>=4?'#4a2060':'#7a5cb5',pilC=pl>=4?'#aaaacc':C.pillow;
+  pxRect(100,76,37,17,'#4a3060');pxRect(101,75,35,15,bdC);
+  pxRect(102,75,12,6,pilC);pxRect(102,75,12,1,'#fff');
+  pxRect(102,79,33,11,blC);pxRect(102,79,33,1,blHi);pxRect(102,85,33,1,blHi);
+  if(pl<=2){pxRect(102,90,33,2,'#eeeef5');}
+  pxRect(101,93,3,3,'#3a2050');pxRect(134,93,3,3,'#3a2050');
+  if(pl>=3){pxRect(104,80,28,8,'#3a2a4a');}
+  pxRect(139,57,20,24,'#5a3a1a');pxRect(139,57,20,1,'#7a5a3a');pxRect(139,57,1,24,'#7a5a3a');pxRect(158,57,1,24,'#7a5a3a');
+  pxRect(140,58,8,22,'#6b4a2a');pxRect(149,58,8,22,'#6b4a2a');
+  pxRect(146,68,2,4,'#886633');pxRect(146,76,2,4,'#886633');
+  if(pl<=1){pxRect(139,57,1,3,'#4a3060');}
+  pxRect(88,82,18,12,'#6b4423');pxRect(88,82,18,1,'#8b6443');
+  pxRect(86,82,8,8,'#5a3a1a');pxRect(86,82,8,1,'#7a5a3a');
+  const lampC=PAIN_INFO[Math.min(pl,5)].lampColor;
+  pxRect(88,78,3,4,'#888');pxRect(88,77,3,1,lampC==='#000'?'#333':lampC);
+  if(lampC!=='#000'&&lampC!=='#221100'&&pl<=2){ctx.fillStyle='#ffe066';ctx.globalAlpha=0.12;ctx.fillRect(86*PX,72*PX,8*PX,8*PX);ctx.globalAlpha=1;}
+  if(pl<=1){pxRect(90,79,4,3,'#cc3333');pxRect(95,79,3,3,'#3366cc');}
+  const wc=PAIN_INFO[Math.min(pl,5)].winC;
+  pxRect(84,60,16,14,wc);pxRect(84,60,16,1,'#4455aa');pxRect(84,60,1,14,'#4455aa');pxRect(99,60,1,14,'#4455aa');pxRect(84,73,16,1,'#4455aa');pxRect(91,60,1,14,'#4455aa');pxRect(84,66,16,1,'#4455aa');
+  const rugC=pl>=3?'#3a2a4a':C.rug;
+  pxRect(92,92,22,5,rugC);pxRect(92,92,22,1,'#7a5a8a');
+}
+
+// ═══ DRAW CHARACTER ═══
+function drawCharacter(px,py,pl,pose,frame,facing){
+  let xc=Math.round(px*PX),yc=Math.round(py*PX);let f=facing;
+  function cpx(dx,dy,w,h,color){ctx.fillStyle=color;ctx.fillRect(xc+f*dx*PX,yc+dy*PX,f*w*PX,h*PX);}
+  const skinC=pl>=4?C.skinPale:(pl>=2?'#ddbb88':C.skin);
+  const shirtC=pl>=4?C.shirtGrey:(pl>=2?'#664444':C.shirt);
+  const pantsC=pl>=4?C.pantsGrey:C.pants;
+  const hairC=pl>=4?'#555544':(pl>=3?'#333':C.hair);
+  const eyeC=pl>=3?C.eyeClosed:C.eye;
+  const mouthC=pl>=4?C.mouthWail:(pl>=2?C.mouthFrown:C.mouth);
+  let bob=0,legAnim=0;
+  if(pose==='walk'||pose==='pacing'||pose==='wince_walk'||pose==='limping'||pose==='crawl'||pose==='slow_walk'){
+    let spd=pose==='slow_walk'?0.3:(pose==='limping'?0.15:(pose==='crawl'?0.2:0.5));
+    legAnim=Math.sin(frame*spd*0.4)*2;bob=Math.abs(Math.sin(frame*spd*0.4))*1;
+  }else if(pose==='dance'||pose==='sing'){legAnim=Math.sin(frame*0.6)*2;bob=Math.sin(frame*0.6)*1.5;
+  }else if(pose==='jump'){bob=Math.abs(Math.sin(frame*0.5))*3;
+  }else if(pose==='shake'||pose==='spasm'||pose==='shiver'||pose==='shiver_sofa'||pose==='floor_tremble'){bob=Math.sin(frame*1.5)*0.5;xc+=Math.sin(frame*3)*0.5;
+  }else if(pose==='roll'){bob=Math.sin(frame*0.3)*1;}
+  let eyeH=2;
+  if(pose!=='sleep'&&pose!=='no_response'&&pose!=='unconscious_bath'){let bc=frame%120;if(bc<5)eyeH=1;}
+  // SLEEP
+  if(pose==='sleep'||pose==='restless_sleep'||pose==='nightmare'||pose==='no_response'||pose==='collapse_bed'||pose==='breathing'){
+    cpx(-4,-3,4,3,skinC);cpx(-4,-3,4,1,hairC);cpx(-4,-3,1,2,hairC);
+    cpx(-3,-2,1,eyeH,eyeC);cpx(-1,-2,1,eyeH,eyeC);cpx(-2,-1,1,1,mouthC);
+    cpx(0,-3,6,3,shirtC);cpx(0,-2,1,2,skinC);cpx(5,-2,1,2,skinC);
+    cpx(0,0,2,2,pantsC);cpx(2,0,2,2,pantsC);
+    if(pose==='restless_sleep'||pose==='nightmare'){if(frame%30<20)cpx(2,-4,1,2,C.sweat);if(pose==='nightmare')cpx(-4,-5,1,1,'#ff4444');}
+    if(pose==='sleep'&&frame%60<40){ctx.fillStyle='#aaaaff';ctx.font=`${PX*3}px monospace`;ctx.fillText('z',xc+(-6)*f*PX,yc+(-5)*PX);ctx.font=`${PX*2}px monospace`;ctx.fillText('z',xc+(-5)*f*PX,yc+(-7)*PX);}
+    return;
+  }
+  // LYING
+  if(pose==='lie_floor'||pose==='lie_kitchen'||pose==='still_floor'||pose==='fetal'||pose==='roll'||pose==='floor_tremble'||pose==='still_bath'){
+    let lx=-5,ly=-1;cpx(lx,ly,4,3,skinC);cpx(lx,ly,4,1,hairC);
+    if(pl>=4){cpx(lx,ly,1,1,'#222');cpx(lx+1,ly-1,1,1,'#222');cpx(lx,ly-1,1,1,'#222');cpx(lx+1,ly,1,1,'#222');}
+    else{cpx(lx,ly+1,2,1,eyeC);}
+    cpx(lx+1,ly+1,1,1,mouthC);cpx(lx+4,ly,3,2,shirtC);cpx(lx+4,ly+1,1,2,skinC);cpx(lx-1,ly+1,1,2,skinC);
+    cpx(lx+2,ly+2,2,1,pantsC);cpx(lx+4,ly+2,2,1,pantsC);
+    if(pose==='fetal'||pose==='floor_tremble'){if(frame%20<15)cpx(3,-2,1,2,C.sweat);if(pose==='floor_tremble')cpx(3,-3,1,1,'#444');}
+    return;
+  }
+  // CRAWL
+  if(pose==='crawl'||pose==='crawl_pill'||pose==='last_crawl'){
+    cpx(-3,-2,4,3,skinC);cpx(-3,-2,4,1,hairC);cpx(-2,-1,2,1,eyeC);cpx(0,-1,2,1,eyeC);cpx(-1,0,2,1,mouthC);
+    cpx(-3,1,4,2,shirtC);cpx(-3,1,1,2,skinC);cpx(0,1,1,2,skinC);cpx(-2,3,2,2,pantsC);cpx(0,3,2,2,pantsC);
+    if(pl>=3){cpx(1,-1,1,2,C.sweat);cpx(2,-2,1,1,C.sweat);}
+    return;
+  }
+  // HEAD
+  cpx(-2,-8,4,4,skinC);cpx(-2,-8,4,1,hairC);cpx(-2,-8,1,3,hairC);cpx(1,-8,1,3,hairC);
+  if(pl>=4){cpx(-1,-6,1,1,'#222');cpx(0,-7,1,1,'#222');cpx(-1,-7,1,1,'#222');cpx(0,-6,1,1,'#222');}
+  else{cpx(-1,-6,1,eyeH,eyeC);cpx(0,-6,1,eyeH,eyeC);}
+  if(pl===0&&pose!=='walk'){cpx(-2,-5,1,1,C.blush);cpx(1,-5,1,1,C.blush);}
+  if(pl===0)cpx(-1,-5,2,1,mouthC);else if(pl>=2)cpx(-1,-5,2,1,mouthC);
+  if(pl>=2&&(pose==='stand'||pose==='sit'||pose==='walk'||pose==='game'||pose==='slow_walk')){let sy=-7+Math.floor(frame/30)%2;cpx(2,sy,1,2,C.sweat);if(pl>=3){cpx(3,sy-1,1,2,C.sweat);}}
+  if(pl>=4){cpx(1,-5,1,2,C.tear);cpx(2,-4,1,2,C.tear);}
+  // BODY
+  cpx(-2,-4+bob,4,3,shirtC);
+  // ARMS
+  if(pose==='game'){cpx(-3,-3,1,2,skinC);cpx(2,-3,1,2,skinC);cpx(-1,-3,2,1,'#333');}
+  else if(pose==='eat'){cpx(-3,-5,1,2,skinC);cpx(2,-5,1,2,skinC);cpx(-4,-6,2,1,'#ffaa44');cpx(2,-6,2,1,'#ffaa44');}
+  else if(pose==='bath'){cpx(-3,-7,1,4,skinC);cpx(2,-7,1,4,skinC);}
+  else if(pose==='cook'){cpx(2,-4+bob,1,3,skinC);cpx(2,-3,1,3,skinC);}
+  else if(pose==='drink'){cpx(-3,-4,1,3,skinC);cpx(2,-4,1,3,skinC);cpx(2,-6,1,2,'#88ccff');}
+  else if(pose==='pill'){cpx(-2,-4,2,1,'#ffffff');cpx(0,-4,2,1,'#ffffff');}
+  else if(pose==='brush'||pose==='wash'){cpx(-3,-3,1,3,skinC);cpx(2,-3,1,3,skinC);}
+  else if(pose==='sing'||pose==='dance'){cpx(-3,-5+Math.sin(frame*0.5)*2,1,2,skinC);cpx(2,-5-Math.sin(frame*0.5)*2,1,2,skinC);}
+  else if(pose==='pray'){cpx(-2,-5,4,2,skinC);}
+  else if(pose==='reach_sos'){cpx(4,-6,3,1,skinC);cpx(4,-5,3,1,skinC);}
+  else if(pose==='cover_pain'){cpx(-2,-3,4,2,skinC);}
+  else if(pose==='massage'){cpx(-3,-3,1,2,skinC);cpx(2,-3,1,2,skinC);}
+  else if(pose==='hug_pillow'||pose==='hug_self'){cpx(-3,-4,1,3,skinC);cpx(2,-4,1,3,skinC);}
+  else if(pose==='grip_sheet'){cpx(-3,-4,1,3,skinC);cpx(2,-4,1,3,skinC);}
+  else if(pose==='scream_blanket'||pose==='hide_face'||pose==='hide_blanket'){cpx(-2,-6,4,3,skinC);}
+  else if(pose==='headbang'){cpx(-3,-7,1,2,skinC);cpx(2,-7,1,2,skinC);cpx(-1,-8,2,1,'#333');cpx(0,-8,2,1,'#333');}
+  else if(pose==='stretch'||pose==='yoga'){cpx(-4,-6,1,3,skinC);cpx(3,-6,1,3,skinC);}
+  else if(pose==='stare'||pose==='stare_empty'||pose==='stare_phone'){cpx(-3,-4+bob,1,3,skinC);cpx(2,-4+bob,1,3,skinC);}
+  else if(pose==='watch_clock'){cpx(0,-7,1,3,skinC);}
+  else if(pose==='ice'){cpx(-3,-5,1,2,'#88ccff');cpx(2,-5,1,2,'#88ccff');}
+  else if(pose==='call'){cpx(-2,-6,4,1,skinC);cpx(-2,-5,4,1,skinC);}
+  else if(pose==='kick'){cpx(-4,-3,1,3,skinC);cpx(3,-3,1,3,skinC);}
+  else if(pose==='clap'){cpx(-4,-5,1,2,skinC);cpx(3,-5,1,2,skinC);}
+  else if(pose==='water'){cpx(-3,-6,1,2,skinC);cpx(2,-6,1,2,skinC);}
+  else if(pose==='reach'||pose==='fridge'){cpx(2,-5,1,3,skinC);}
+  else if(pose==='lean'||pose==='lean_wall'||pose==='lean_fridge'){cpx(-3,-4,1,3,skinC);cpx(2,-4,1,3,skinC);}
+  else if(pose==='stand'||pose==='walk'||pose==='pacing'||pose==='look'||pose==='stare'||pose==='talk'||pose==='read'||pose==='yoga'){cpx(-3,-3,1,3,skinC);cpx(2,-3,1,3,skinC);}
+  else if(pose==='sit'||pose==='sit_bed_sad'){cpx(-3,-3,1,2,skinC);cpx(2,-3,1,2,skinC);}
+  else if(pose==='kneel'||pose==='crouch'||pose==='squat'||pose==='curl'||pose==='fetal'){cpx(-3,-2,1,2,skinC);cpx(2,-2,1,2,skinC);}
+  else if(pose==='jump'){cpx(-3,-4,1,2,skinC);cpx(2,-4,1,2,skinC);}
+  else if(pose==='roll'||pose==='squirm'){cpx(-3,-4,1,3,skinC);cpx(2,-4,1,3,skinC);}
+  else if(pose==='sleep'||pose==='lie'||pose==='collapse'||pose==='still_floor'||pose==='sit_cry'||pose==='cry'||pose==='slide_down'||pose==='dizzy'||pose==='spasm'){cpx(-3,-3,1,2,skinC);cpx(2,-3,1,2,skinC);}
+  else if(pose==='shower'||pose==='bath'||pose==='bath_no_move'||pose==='unconscious_bath'){cpx(-3,-6,1,3,skinC);cpx(2,-6,1,3,skinC);}
+  else if(pose==='sit_toilet'){cpx(-3,-2,1,2,skinC);cpx(2,-2,1,2,skinC);}
+  else if(pose==='mirror'){cpx(2,-6,1,2,skinC);}
+  else if(pose==='limping'||pose==='wince_walk'||pose==='slow_walk'){cpx(-3,-3,1,3,skinC);cpx(2,-3,1,3,skinC);}
+  else if(pose==='find_support'||pose==='drag'){cpx(-3,-4,1,3,skinC);cpx(2,-4,1,3,skinC);}
+  else {cpx(-3,-3,1,3,skinC);cpx(2,-3,1,3,skinC);}
+  // LEGS
+  if(pose==='sit'||pose==='sit_toilet'||pose==='lean'||pose==='stare'||pose==='sit_bed_sad'||pose==='lean_wall'||pose==='squat'||pose==='curl'||pose==='kneel'||pose==='fetal'){
+    cpx(-2,-1,2,2,pantsC);cpx(0,-1,2,2,pantsC);
+  }else if(pose==='crouch'){cpx(-3,0,3,2,pantsC);cpx(0,0,3,2,pantsC);
+  }else if(pose==='lie_bath'||pose==='lie'){cpx(-4,0,3,2,pantsC);cpx(-1,0,3,2,pantsC);
+  }else{cpx(-2,-1+legAnim,2,2,pantsC);cpx(0,-1-legAnim,2,2,pantsC);}
+}
+
+// ═══ PICK NEXT ACTIVITY ═══
+function pickNextActivity(pl,room){
+  let candidates=ACTIVITIES.filter(a=>{
+    if(a.room!=='any'&&a.room!==room)return false;
+    return pl>=a.minPL&&pl<=a.maxPL;
+  });
+  if(candidates.length===0)candidates=ACTIVITIES.filter(a=>a.minPL===0&&a.room==='any');
+  let cur=char.activityDef;
+  let choices=candidates.filter(a=>!cur||a.id!==cur.id);
+  if(choices.length===0)choices=candidates;
+  return choices[Math.floor(Math.random()*choices.length)];
+}
+
+// ═══ ROOM TRANSITION ═══
+function tryChangeRoom(){
+  const neighbors={living:['kitchen','bath'],kitchen:['living','bed'],bath:['living','bed'],bed:['kitchen','bath']};
+  let cur=char.currentRoom,list=neighbors[cur]||[];
+  if(list.length===0)return;
+  let next=list[Math.floor(Math.random()*list.length)];
+  let door=DOORS.find(d=>d.from===cur&&d.to===next);
+  if(!door)return;
+  char.walkTarget={x:door.x,y:door.y,targetRoom:next};
+  char.isMoving=true;char.activity='walk';
+}
+
+// ═══ UPDATE CHARACTER ═══
+function updateChar(){
+  char.frame++;char.activityTimer++;
+  if(char.isMoving&&char.walkTarget){
+    let dx=char.walkTarget.x-char.x,dy=char.walkTarget.y-char.y,dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<1){
+      if(char.walkTarget.targetRoom)char.currentRoom=char.walkTarget.targetRoom;
+      char.isMoving=false;char.x=char.walkTarget.x;char.y=char.walkTarget.y;char.walkTarget=null;
+      char.activityDef=pickNextActivity(gameState.painLevel,char.currentRoom);
+      char.activity=char.activityDef.pose;char.activityTimer=0;
+    }else{
+      char.x+=(dx/dist)*char.walkSpeed;char.y+=(dy/dist)*char.walkSpeed;
+      char.facing=dx>0?1:-1;
+    }
+  }else{
+    if(char.activityDef&&char.activityTimer>char.activityDef.dur){
+      if(Math.random()<0.25)tryChangeRoom();
+      else{char.activityDef=pickNextActivity(gameState.painLevel,char.currentRoom);char.activity=char.activityDef.pose;char.activityTimer=0;}
+    }
+  }
+  let pl=gameState.painLevel;
+  if(pl>=4&&char.isMoving)char.walkSpeed=0.15;else if(pl>=3&&char.isMoving)char.walkSpeed=0.25;else if(pl>=2&&char.isMoving)char.walkSpeed=0.3;else char.walkSpeed=0.4;
+  if(pl>=4&&!char.isMoving&&Math.random()<0.02){
+    let hp=ACTIVITIES.filter(a=>a.minPL>=4&&(a.room===char.currentRoom||a.room==='any'));
+    if(hp.length>0){let a=hp[Math.floor(Math.random()*hp.length)];char.activityDef=a;char.activity=a.pose;char.activityTimer=0;}
+  }
+}
+
+// ═══ MAIN DRAW ═══
+function drawScene(pl){
+  ctx.fillStyle=pl>=3?'#000':C.bg;ctx.fillRect(0,0,W,H);
+  drawFloor(pl);drawWalls(pl);drawWindows(pl);drawDoors(pl);
+  drawLivingRoom(pl);drawKitchen(pl);drawBathroom(pl);drawBedroom(pl);
+  let cx=char.x,cy=char.y;
+  if(char.currentRoom==='living'){drawCharacter(cx,cy,pl,char.activity,char.frame,char.facing);}
+  else if(char.currentRoom==='kitchen'){drawCharacter(cx-80,cy,pl,char.activity,char.frame,char.facing);}
+  else if(char.currentRoom==='bath'){drawCharacter(cx,cy-55,pl,char.activity,char.frame,char.facing);}
+  else if(char.currentRoom==='bed'){drawCharacter(cx-80,cy-55,pl,char.activity,char.frame,char.facing);}
+}
+
+// ═══ UPDATE UI ═══
+function updateUI(){
+  let pl=Math.min(gameState.painLevel,5),info=PAIN_INFO[pl];
+  document.getElementById('painNum').textContent=pl;
+  document.getElementById('painNum').style.color=info.color;
+  document.getElementById('feltNum').textContent=gameState.feltPain.toFixed(1);
+  document.getElementById('emotionText').textContent=gameState.emotion;
+  document.getElementById('emotionText').style.color=info.color;
+  const roomNames={living:'🛋️ 客廳',kitchen:'🍳 廚房',bath:'🚽 浴室',bed:'🛏️ 臥室'};
+  document.getElementById('locationText').textContent=roomNames[char.currentRoom]||'—';
+  let ad=char.activityDef;
+  let actText=ad?ad.name:(char.isMoving?'走動中…':'待機');
+  let actIcon=ad?ad.icon:(char.isMoving?'🚶':'💭');
+  document.getElementById('activityText').textContent=actText;
+  document.getElementById('activityIcon').textContent=actIcon;
+  document.getElementById('activityName').textContent=ad?ad.name:'待機';
+  document.getElementById('activityTag').textContent=ad?(ad.name.substring(0,18)+'…'):'';
+  document.getElementById('roomLabel').textContent={living:'🛋️ 客廳',kitchen:'🍳 廚房',bath:'🚽 浴室',bed:'🛏️ 臥室'}[char.currentRoom]||'🏠 像素小人生活';
+  document.getElementById('painOverlay').style.background=info.overlay;
+  document.getElementById('phyDesc').textContent=info.phy;
+  document.getElementById('menDesc').textContent=info.men;
+  document.getElementById('mainPainNum').textContent=pl;document.getElementById('mainPainNum').className='pain-number lv'+pl;
+  document.getElementById('mainPainName').textContent=info.name;
+  document.getElementById('mainBar').className='bar-fill lv'+pl;
+  let logs=gameState.emotionLogs||[];
+  let logList=document.getElementById('logList');
+  if(logs.length===0){logList.innerHTML='<div class="empty-state">暫無記錄，試試在 PainMatrix 輸入 scold 或 praise</div>';}
+  else{logList.innerHTML=logs.slice(-8).reverse().map(l=>{let calm=l.emotion==='平靜'||l.pain_level===0;return`<div class="log-item ${calm?'relief':''}"><span class="log-time">${l.timestamp||''}</span><span class="log-emotion" style="color:${calm?'#2ed573':'#ff4757'}">${l.emotion}</span><span class="log-level ${calm?'calm':'pain'}">Lv.${l.pain_level}</span><span style="color:#666;margin-left:6px">${l.trigger||''}</span></div>`;}).join('');}
+}
+
+// ═══ API FETCH ═══
+async function fetchState(){
+  try{
+    let res=await fetch('http://127.0.0.1:17888/api/state',{cache:'no-cache'});
+    let json=await res.json();
+    gameState.painLevel=json.pain_level||0;
+    gameState.feltPain=parseFloat(json.felt_pain||0);
+    gameState.anxiety=json.anxiety_level||0;
+    gameState.emotion=json.emotion_state||'平靜';
+    gameState.emotionLogs=json.emotion_log||[];
+    gameState.isRestless=json.is_restless||false;
+    updateUI();
+    updateMainCards(json);
+  }catch(e){}
+}
+function updateMainCards(d){
+  let l=d.pain_level||0;
+  let fp=parseFloat(d.felt_pain||0);
+  let elF=document.getElementById('feltNum');
+  if(elF)elF.textContent=fp.toFixed?fp.toFixed(1):fp;
+  let rst=d.is_restless||false;
+  let elRI=document.getElementById('restlessIcon');
+  if(elRI)elRI.innerHTML=rst?'&#x26A1;':'&#x2705;';
+  let peakEl=document.getElementById('peakIcon');
+  if(peakEl)peakEl.innerHTML=d._in_peak?'&#x2744;':'—';
+  let anxEl=document.getElementById('anxietyNum');
+  if(anxEl)anxEl.textContent=(d.anxiety_level||0).toFixed(0);
+  let cogEl=document.getElementById('cognitiveCap');
+  if(cogEl)cogEl.textContent=Math.round((1-(d.cognitive_capacity||1))*100)+'%';
+  let desEl=document.getElementById('desireVal');
+  if(desEl)desEl.textContent=(d.dominant_desire||'—');
+  // Homeostatic
+  let feEl=document.getElementById('feVal'),pbEl=document.getElementById('pbVal'),afEl=document.getElementById('afVal');
+  let fe=d.free_energy||0,pb=d.pain_burden||0,af=d.anticipatory_fear||0;
+  if(feEl){feEl.textContent=fe.toFixed(4);feEl.className='fe-val '+(fe>0.1?'danger':(fe>0.01?'warn':'good'));}
+  if(pbEl){pbEl.textContent=pb.toFixed(2);pbEl.className='fe-val '+(pb>0.5?'danger':(pb>0.1?'warn':'good'));}
+  if(afEl){afEl.textContent=af.toFixed(1)+'/100';afEl.className='fe-val '+(af>60?'danger':(af>30?'warn':'good'));}
+  // HomeoGrid
+  let hvars=d.homeostatic||{},setpoints=d.setpoints||{};
+  let names={energy:'能量',social_bond:'社會連結',competence:'勝任感',autonomy:'自主性',purpose:'存在意義'};
+  let grid=document.getElementById('homeoGrid');
+  if(grid){
+    let html='';
+    for(let key in names){
+      let cur=hvars[key]||0,sp=setpoints[key]||0,dev=Math.max(0,sp-cur),pct=Math.round(cur*100);
+      let cls=dev>0.3?'danger':(dev>0.1?'warn':'good');
+      html+=`<div class="homeo-item"><div class="homeo-label">${names[key]}</div><div class="homeo-bar-wrap"><div class="homeo-bar-fill ${cls}" style="width:${pct}%"></div></div><div class="homeo-val">${cur.toFixed(2)} / ${sp.toFixed(2)}</div></div>`;
+    }
+    grid.innerHTML=html;
+  }
+  // Trauma
+  let traumas=d.trauma_memories||[],tEl=document.getElementById('traumaList');
+  if(tEl){
+    if(!traumas.length){tEl.innerHTML='<div class="empty-state">尚無創傷記錄</div>';}
+    else{tEl.innerHTML=traumas.slice(-8).reverse().map(t=>`<div
+    grid.innerHTML = html;
+  }
+  let traumas = d.trauma_memories || [], tEl = document.getElementById('traumaList');
+  if (tEl) {
+    if (!traumas.length) { tEl.innerHTML = '<div class="empty-state">尚無創傷記錄</div>'; }
+    else { tEl.innerHTML = traumas.slice(-8).reverse().map(t => '<div class="trauma-item"><div class="t-date">' + (t.timestamp || '') + '</div><div class="t-event">' + (t.event || '') + '</div><div class="t-strength">強度: ' + (t.strength || 0).toFixed(2) + '</div></div>').join(''); }
+  }
+  let ev = d.evolution || {};
+  let gEl = document.getElementById('evoGrowth'), rEl = document.getElementById('evoResilience'), sEl = document.getElementById('evoSensitivity');
+  if (gEl) gEl.textContent = 'Lv.' + (ev.growth_level || 1);
+  if (rEl) rEl.textContent = (ev.resilience_score || 0).toFixed(0);
+  if (sEl) { sEl.textContent = (ev.pain_sensitivity || 1.00).toFixed(2); sEl.style.color = (ev.pain_sensitivity || 1) > 1 ? '#ff4757' : '#ffa502'; }
+  let iEl = document.getElementById('evoInsight');
+  if (iEl) iEl.innerHTML = ev.insight || '使用 evolve 命令進行每日自我進化';
+  let trigs = d.pain_triggers || [];
+  let tList = document.getElementById('triggers');
+  if (tList) {
+    if (!trigs.length) { tList.innerHTML = '<div class="empty-state">暫無記錄</div>'; }
+    else { tList.innerHTML = trigs.slice(-10).reverse().map(t => '<div class="trigger-item ' + ((t.type || '').includes('relief') ? 'relief' : '') + '"><span class="trigger-time">' + (t.timestamp || '') + '</span><span class="trigger-reason">' + (t.reason || '') + '</span><span class="trigger-src ' + ((t.type || '').includes('relief') ? 'relief' : 'pain') + '">' + (t.type || '') + '</span></div>').join(''); }
+  }
+  let tasks = d.pending_tasks || [];
+  let taskEl = document.getElementById('taskList');
+  if (taskEl) {
+    if (!tasks.length) { taskEl.innerHTML = '<div class="empty-state">暫無任務</div>'; }
+    else { taskEl.innerHTML = tasks.map(t => '<div class="trigger-item"><span class="trigger-time">' + (t.created_at || '') + '</span><span class="trigger-reason">' + (t.description || '') + '</span></div>').join(''); }
+  }
+  let hEl = document.getElementById('hint');
+  if (hEl) {
+    let pl = d.pain_level || 0;
+    if (pl === 0) { hEl.className = 'hint calm'; hEl.innerHTML = '<strong>✨ 痛感全消！狀態極佳！</strong><br>快快樂樂地生活！不受疼痛限制！'; }
+    else if (pl === 1) { hEl.className = 'hint calm'; hEl.innerHTML = '<strong>🟡 輕微不適</strong><br>室內活動不受限，可以正常生活。試試看漫畫、玩遊戲、聽音樂轉移注意力。'; }
+    else if (pl === 2) { hEl.className = 'hint pain'; hEl.innerHTML = '<strong>🟠 中度疼痛</strong><br>室內走動困難，選擇近處家具支撐。嘗試沙發、書桌就近休息。'; }
+    else if (pl === 3) { hEl.className = 'hint pain'; hEl.innerHTML = '<strong>🔴 強烈疼痛</strong><br>室內嚴重受限，只能近距離移動。盡快用藥或求助！'; }
+    else { hEl.className = 'hint pain'; hEl.innerHTML = '<strong>🚨 劇烈/極度疼痛</strong><br>臥室或就近位置倒地，盡快求助！聯繫家人或就醫！'; }
+  }
+  let dEl = document.getElementById('desireText');
+  if (dEl) {
+    let des = d.dominant_desire || '無';
+    let val = d.desire_intensity || 0;
+    dEl.innerHTML = '當前最迫切：<strong>' + des + '</strong>（強度 ' + (val * 100).toFixed(0) + '%）';
+  }
+}
+
+let chartData = [];
+let chartLabels = [];
+let maxChartPoints = 40;
+
+function initChart() {
+  let cvs = document.getElementById('chart');
+  if (!cvs) return;
+  let ctx2 = cvs.getContext('2d');
+  cvs.width = cvs.parentElement.offsetWidth;
+  cvs.height = cvs.parentElement.offsetHeight || 220;
+  let W = cvs.width, H = cvs.height;
+
+  function drawChart() {
+    ctx2.clearRect(0, 0, W, H);
+    let labels = chartLabels || [];
+    let data = chartData || [];
+    if (data.length < 2) return;
+    let max = Math.max(...data.map(Math.abs), 1);
+    let pad = 30;
+    ctx2.strokeStyle = '#2a2a4a';
+    ctx2.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      let y = pad + (H - pad * 2) * i / 4;
+      ctx2.beginPath();
+      ctx2.moveTo(pad, y);
+      ctx2.lineTo(W - pad, y);
+      ctx2.stroke();
+    }
+    ctx2.strokeStyle = '#667eea';
+    ctx2.lineWidth = 2;
+    ctx2.beginPath();
+    data.forEach((v, i) => {
+      let x = pad + (W - pad * 2) * i / (maxChartPoints - 1);
+      let y = H - pad - (v / (max * 1.2) + 0.5) * (H - pad * 2);
+      if (i === 0) ctx2.moveTo(x, y);
+      else ctx2.lineTo(x, y);
+    });
+    ctx2.stroke();
+    ctx2.fillStyle = '#667eea';
+    data.forEach((v, i) => {
+      let x = pad + (W - pad * 2) * i / (maxChartPoints - 1);
+      let y = H - pad - (v / (max * 1.2) + 0.5) * (H - pad * 2);
+      ctx2.beginPath();
+      ctx2.arc(x, y, 2, 0, Math.PI * 2);
+      ctx2.fill();
+    });
+    ctx2.fillStyle = '#666';
+    ctx2.font = '10px monospace';
+    ctx2.textAlign = 'center';
+    let step = Math.max(1, Math.floor(labels.length / 6));
+    labels.forEach((l, i) => {
+      if (i % step === 0) {
+        let x = pad + (W - pad * 2) * i / (maxChartPoints - 1);
+        ctx2.fillText(l.substring(11, 16), x, H - 5);
+      }
+    });
+    ctx2.textAlign = 'left';
+    ctx2.fillStyle = '#2ed573';
+    ctx2.fillText('+', pad - 8, H - pad - (1 * 1.2 + 0.5) * (H - pad * 2));
+    ctx2.fillStyle = '#ff4757';
+    ctx2.fillText('-', pad - 8, H - pad - (-1 * 1.2 + 0.5) * (H - pad * 2));
+  }
+
+  setInterval(() => {
+    let cur = gameState.emotion || '平靜';
+    let val = cur.includes('平靜') || cur.includes('快樂') ? 1 : (cur.includes('焦慮') || cur.includes('不安') ? -0.5 : (cur.includes('痛苦') || cur.includes('恐懼') ? -1 : 0));
+    chartData.push(val);
+    chartLabels.push(new Date().toLocaleTimeString());
+    if (chartData.length > maxChartPoints) { chartData.shift(); chartLabels.shift(); }
+    drawChart();
+  }, 3000);
+}
+
+function switchRoom(room) {
+  currentView = room;
+  document.querySelectorAll('.room-tab').forEach(t => t.classList.remove('active'));
+  let tab = document.getElementById('tab-' + (room === 'all' ? 'all' : room));
+  if (tab) tab.classList.add('active');
+}
+
+function init() {
+  char.activityDef = pickNextActivity(0, 'living');
+  char.activity = char.activityDef.pose;
+  initChart();
+  setInterval(() => { tick++; updateChar(); drawScene(gameState.painLevel); }, 100);
+  setInterval(fetchState, 3000);
+  fetchState();
+}
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
