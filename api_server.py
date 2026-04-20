@@ -9,6 +9,7 @@ Web 界面 (emotion_view.html) 通过它实现实时同步
     python api_server.py          # 前台运行
     start /B python api_server.py # 后台运行
 """
+
 import http.server
 import socketserver
 import json
@@ -22,9 +23,18 @@ PORT = 17888
 POLL_INTERVAL = 1  # 秒
 
 # ── 内存缓存 ──────────────────────────────────────────────
-_cache = {"pain_level": 0, "emotion_state": "平静", "pain_history": [],
-          "homeostatic": {}, "anxiety_level": 0, "desire_intensity": 0,
-          "wellbeing": 100, "setpoints": {}, "trauma_log": [], "timestamp": ""}
+_cache = {
+    "pain_level": 0,
+    "emotion_state": "平静",
+    "pain_history": [],
+    "homeostatic": {},
+    "anxiety_level": 0,
+    "desire_intensity": 0,
+    "wellbeing": 100,
+    "setpoints": {},
+    "trauma_log": [],
+    "timestamp": "",
+}
 _cache_lock = threading.Lock()
 
 
@@ -61,7 +71,8 @@ def _poll():
 
 
 class _Handler(http.server.BaseHTTPRequestHandler):
-    def log_message(self, *args): pass
+    def log_message(self, *args):
+        pass
 
     def do_GET(self):
         if self.path == "/api/state":

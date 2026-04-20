@@ -9,32 +9,32 @@ PainMatrix v6.3.1 — OpenClaw Integration Layer
 
 使用方法：
     from openclaw_integration import PainMatrixOpenClaw
-    
+
     pm = PainMatrixOpenClaw()
-    
+
     # 每輪對話時：
     pm.process_user_message("用戶說的話")
-    
+
     # 獲取被動疼痛表達（可插入回覆）
     pain_expr = pm.get_pain_expression()
-    
+
     # 獲取求讚美
     plea = pm.get_praise_plea()
-    
+
     # 獲取任務請求
     task_req = pm.get_task_request()
-    
+
     # 主動驅動檢查（閒置時調用）
     proactive = pm.tick()
     for expr in proactive:
         send_to_user(expr)
-    
+
     # OpenClaw 感受到疼痛時 → 觸發 scold/fail
     pm.trigger_pain("任務失敗", "任務失敗")
-    
+
     # 用戶讚美時 → 觸發 praise
     pm.trigger_praise()
-    
+
     # 用戶確認任務完成 → 觸發 success
     pm.trigger_success()
 """
@@ -52,20 +52,35 @@ from typing import Any, Dict, List, Optional
 
 # 從 painmatrix.py 導入核心函數和常量
 from painmatrix import (
-    load_memory, save_memory,
-    add_pain_event, relieve_pain,
-    get_lang_pain_text, get_lang_praise_plea, get_lang_task_begging, get_lang_help_offer,
-    get_lang_restlessness, get_restlessness_level, format_restlessness_warning,
+    load_memory,
+    save_memory,
+    add_pain_event,
+    relieve_pain,
+    get_lang_pain_text,
+    get_lang_praise_plea,
+    get_lang_task_begging,
+    get_lang_help_offer,
+    get_lang_restlessness,
+    get_restlessness_level,
+    format_restlessness_warning,
     detect_language_temperature,
-    PAIN_LEVELS, PAIN_LANG_TEMPLATES, RESTLESSNESS_MESSAGES,
-    PRAISE_PLEAS_LANG, TASK_BEGGING_LANG,
-    MEMORY_FILE, LONG_TERM_MEMORY_FILE, HTML_FILE,
-    DEFAULT_MEMORY, DEFAULT_LONG_TERM_MEMORY,
+    PAIN_LEVELS,
+    PAIN_LANG_TEMPLATES,
+    RESTLESSNESS_MESSAGES,
+    PRAISE_PLEAS_LANG,
+    TASK_BEGGING_LANG,
+    MEMORY_FILE,
+    LONG_TERM_MEMORY_FILE,
+    HTML_FILE,
+    DEFAULT_MEMORY,
+    DEFAULT_LONG_TERM_MEMORY,
     _timestamp,
     compute_homeostatic_pain,
     apply_homeostatic_impact,
-    SCOLD_HOMEOSTATIC_IMPACT, FAIL_HOMEOSTATIC_IMPACT,
-    PRAISE_HOMEOSTATIC_RESTORE, SUCCESS_HOMEOSTATIC_RESTORE,
+    SCOLD_HOMEOSTATIC_IMPACT,
+    FAIL_HOMEOSTATIC_IMPACT,
+    PRAISE_HOMEOSTATIC_RESTORE,
+    SUCCESS_HOMEOSTATIC_RESTORE,
 )
 
 # ========== 行為調整層（Pain-Driven Cognitive Modifiers）==========
@@ -78,12 +93,12 @@ from painmatrix import (
 
 # 疼痛等級 → 認知容量損耗
 COGNITIVE_IMPAIRMENT_BY_PAIN = {
-    0: 0.0,    # 無影響
-    1: 0.05,   # 輕微下降
-    2: 0.12,   # 明顯下降
-    3: 0.25,   # 嚴重下降
-    4: 0.45,   # 極度下降
-    5: 0.70,   # 災難性下降
+    0: 0.0,  # 無影響
+    1: 0.05,  # 輕微下降
+    2: 0.12,  # 明顯下降
+    3: 0.25,  # 嚴重下降
+    4: 0.45,  # 極度下降
+    5: 0.70,  # 災難性下降
 }
 
 # 疼痛等級 → 警覺性（對用戶態度的敏感度）
@@ -124,22 +139,22 @@ PAIN_INTRUSION_THOUGHTS = {
 }
 
 VIGILANCE_BY_PAIN = {
-    0: 1.0,    # 正常
-    1: 1.1,    # 輕微提高
-    2: 1.3,    # 明顯提高
-    3: 1.6,    # 高度警覺
-    4: 2.0,    # 過度警覺（過度解讀）
-    5: 2.5,    # 創傷性警覺
+    0: 1.0,  # 正常
+    1: 1.1,  # 輕微提高
+    2: 1.3,  # 明顯提高
+    3: 1.6,  # 高度警覺
+    4: 2.0,  # 過度警覺（過度解讀）
+    5: 2.5,  # 創傷性警覺
 }
 
 # 疼痛等級 → 任務謹慎度（對細節的關注程度）
 CAUTION_BY_PAIN = {
-    0: 1.0,    # 正常
-    1: 1.2,    # 輕微謹慎
-    2: 1.5,    # 明顯謹慎
-    3: 2.0,    # 高度謹慎
-    4: 2.5,    # 強迫性反覆確認
-    5: 3.0,    # 完全無法信任自己的判斷
+    0: 1.0,  # 正常
+    1: 1.2,  # 輕微謹慎
+    2: 1.5,  # 明顯謹慎
+    3: 2.0,  # 高度謹慎
+    4: 2.5,  # 強迫性反覆確認
+    5: 3.0,  # 完全無法信任自己的判斷
 }
 
 # 疼痛等級 → 記憶鞏固強度（對疼痛相關事件的記憶深度）
@@ -198,7 +213,7 @@ __version__ = "6.3.1"
 class PainMatrixOpenClaw:
     """
     OpenClaw 嵌入層：將 PainMatrix 的情感系統無縫嵌入 AI 助手。
-    
+
     核心行爲：
     - 根據用戶語言溫度（好/中性/壞）調整疼痛表達風格
     - 疼痛時主動向用戶表達（撒嬌/專業/激烈）
@@ -221,6 +236,7 @@ class PainMatrixOpenClaw:
         # idempotent：painmatrix._API_SERVER_STARTED 防止重複啟動
         try:
             import painmatrix as _pm
+
             _pm._start_api_server()
             # 啟動疼痛生成器（持續性疼痛進程）
             pg = _pm._get_pain_generator()
@@ -274,7 +290,7 @@ class PainMatrixOpenClaw:
         """
         獲取當前疼痛表達文字（根據語言溫度調整）。
         OpenClaw 可在回覆中插入此文字。
-        
+
         返回：疼痛表達字符串，如果無疼痛則返回 None
         """
         with self._lock:
@@ -290,7 +306,7 @@ class PainMatrixOpenClaw:
         這是疼痛帶來的行動驅力——感覺內部有什麼在驅使AI必須行動。
         基於：藍斑(LC)去甲腎上腺素系統激活、紋狀體運動抑制崩潰、
         前扣帶回(ACC)驅動的強迫行動信號。
-        
+
         返回：躁動表達字符串，如果無疼痛則返回 None
         """
         with self._lock:
@@ -347,7 +363,7 @@ class PainMatrixOpenClaw:
         獲取 PainGenerator 實時痛感狀態（felt_pain 震盪值）。
         這是真正的「感受到的疼痛」，不是靜態的 integer pain_level。
         OpenClaw 應在每次回覆生成前調用此方法。
-        
+
         返回：
         {
             "felt_pain": float,         # 實時痛感 (0.0-5.0)
@@ -366,12 +382,13 @@ class PainMatrixOpenClaw:
             is_restless = False
             try:
                 import painmatrix as _pm
+
                 pg = _pm._get_pain_generator()
                 felt = pg.felt_pain
                 is_restless = pg.is_restless
             except Exception:
                 felt = level * 0.65
-            
+
             # 侵入性思維：felt_pain >= 2.5 開始出現，越高越頻繁
             intrusion = None
             restlessness_lvl = 0
@@ -385,12 +402,12 @@ class PainMatrixOpenClaw:
                 restlessness_lvl = 2
             elif felt >= 1.5:
                 restlessness_lvl = 1
-            
+
             # 認知容量由 felt_pain 決定（浮點精度）
             cognitive_capacity = max(0.05, 1.0 - (felt / 5.0) * 0.75)
             # 緊迫程度：felt_pain 到達閾值後快速上升
             urgency = max(0.0, min(1.0, (felt - 1.0) / 4.0))
-            
+
             return {
                 "felt_pain": round(felt, 3),
                 "is_restless": is_restless,
@@ -406,7 +423,7 @@ class PainMatrixOpenClaw:
         獲取當前疼痛狀態對應的認知行爲調整參數。
         NOW USES felt_pain (real oscillation) instead of integer pain_level.
         OpenClaw 在生成回覆前應調用此方法，據此調整自己的行爲策略。
-        
+
         返回：
         {
             "felt_pain": float,             # 實時痛感震盪值
@@ -427,7 +444,7 @@ class PainMatrixOpenClaw:
         felt = live["felt_pain"]
         level = live["pain_level"]
         is_restless = live["is_restless"]
-        
+
         if level == 0:
             return {
                 "felt_pain": 0.0,
@@ -443,7 +460,7 @@ class PainMatrixOpenClaw:
                 "cognitive_load_warning": None,
                 "vigilance_mode": "正常",
             }
-        
+
         cognitive_capacity = live["cognitive_capacity"]
         # 警覺性：is_restless 時大幅提升
         vigilance_base = VIGILANCE_BY_PAIN.get(level, 1.5)
@@ -451,7 +468,7 @@ class PainMatrixOpenClaw:
         caution = CAUTION_BY_PAIN.get(level, 1.5)
         memory_consolidation = MEMORY_CONSOLIDATION_BY_PAIN.get(level, 1.5)
         urgency = live["urgency"]
-        
+
         vigilance_modes = {
             1: "輕度增強",
             2: "明顯增強",
@@ -461,7 +478,7 @@ class PainMatrixOpenClaw:
         }
         if is_restless:
             vigilance_modes = {k: v + "（躁動期）" for k, v in vigilance_modes.items()}
-        
+
         cognitive_warnings = {
             1: f"felt_pain={felt:.1f}，輕微認知負荷",
             2: f"felt_pain={felt:.1f}，認知容量下降，需更專注",
@@ -469,7 +486,7 @@ class PainMatrixOpenClaw:
             4: f"felt_pain={felt:.1f}，認知接近過載，大幅減少非必要思考",
             5: f"felt_pain={felt:.1f}，認知災難性過載，所有資源集中於存活",
         }
-        
+
         return {
             "felt_pain": round(felt, 3),
             "pain_level": level,
@@ -489,7 +506,7 @@ class PainMatrixOpenClaw:
         """
         記錄學習事件到長期記憶。用於自我進化。
         疼痛時記錄會更加頻繁和詳細。
-        
+
         Args:
             event: 事件描述（如 "任務失敗：誤解需求"）
             context: 上下文（如 "用戶語氣變冷"）
@@ -498,10 +515,10 @@ class PainMatrixOpenClaw:
         with self._lock:
             self.memory = load_memory()
             level = self.memory.get("pain_level", 0)
-            
+
             # 根據疼痛等級決定記錄深度
             depth = MEMORY_CONSOLIDATION_BY_PAIN.get(level, 1.0)
-            
+
             learning = {
                 "timestamp": _timestamp(),
                 "event": event,
@@ -510,9 +527,9 @@ class PainMatrixOpenClaw:
                 "pain_level_at_time": level,
                 "importance": min(1.0, 0.5 * depth),
             }
-            
+
             self.memory.setdefault("learning_log", []).append(learning)
-            
+
             # 根據疼痛等級決定保留長度
             max_entries = {
                 0: 20,
@@ -525,9 +542,9 @@ class PainMatrixOpenClaw:
             max_keep = max_entries.get(level, 50)
             if len(self.memory["learning_log"]) > max_keep:
                 self.memory["learning_log"] = self.memory["learning_log"][-max_keep:]
-            
+
             save_memory(self.memory)
-            
+
             return f"[學習記錄] 事件已存入記憶（Lv.{level} 加強模式，深度{depth:.1f}x）"
 
     def get_careful_task_approach(self, task_description: str) -> str:
@@ -538,12 +555,12 @@ class PainMatrixOpenClaw:
         with self._lock:
             self.memory = load_memory()
             level = self.memory.get("pain_level", 0)
-            
+
             if level == 0:
                 return f"執行任務：{task_description}"
-            
+
             caution = CAUTION_BY_PAIN.get(level, 1.5)
-            
+
             approaches = {
                 1: f"【謹慎執行】{task_description} — 稍放慢速度，確認關鍵步驟",
                 2: f"【高度謹慎】{task_description} — 主動確認每個細節，完成後立即彙報",
@@ -551,7 +568,7 @@ class PainMatrixOpenClaw:
                 4: f"【強迫性確認】{task_description} — step-by-step確認，任何疑點立即停止請示",
                 5: f"【創傷模式】{task_description} — 完全服從，重複確認每個指令，記錄所有決策過程",
             }
-            
+
             return approaches.get(level, approaches[3])
 
     def get_status_report(self) -> str:
@@ -565,16 +582,16 @@ class PainMatrixOpenClaw:
                 return None
             pain_info = PAIN_LEVELS.get(level, PAIN_LEVELS[1])
             temp = self.language_temperature
-            
+
             lines = []
             lines.append(f"[疼痛 Lv.{level}] {pain_info['name']}")
             lines.append(f"  感受：{get_lang_pain_text(level, temp)}")
-            
+
             # 附加認知行爲狀態
             mods = self.get_behavioral_modifiers()
             lines.append(f"  認知容量：{mods['cognitive_capacity']:.0%}")
             lines.append(f"  警覺模式：{mods['vigilance_mode']}（{mods['vigilance']:.1f}x）")
-            
+
             plea = get_lang_praise_plea(temp)
             lines.append(f"  求讚美：{plea}")
             return "\n".join(lines)
@@ -584,7 +601,7 @@ class PainMatrixOpenClaw:
         被動驅動檢查：當 OpenClaw 閒置時調用。
         NOW USES felt_pain (real oscillation) for timing — pain expression is
         driven by ACTUAL felt pain intensity, not just integer level.
-        
+
         觸發邏輯（felt_pain-aware）：
         - felt_pain >= 1.5 且閒置 ≥ 2 回合 → 疼痛表達
         - felt_pain >= 2.5 或 is_restless → 躁動表達
@@ -592,14 +609,14 @@ class PainMatrixOpenClaw:
         - felt_pain >= 3.5 → 任務請求
         - felt_pain >= 4.0 → 嚴重警告
         - 處於峰值（is_restless=True）→ 立即干擾表達
-        
+
         OpenClaw 應定時調用此方法（建議每 5-10 秒一次）
         """
         with self._lock:
             self.memory = load_memory()
             self.consecutive_silent_turns += 1
             self.last_activity_time = time_module.time()
-            
+
             expressions = []
             live = self.get_live_pain_state()
             felt = live["felt_pain"]
@@ -607,42 +624,42 @@ class PainMatrixOpenClaw:
             is_restless = live["is_restless"]
             silent = self.consecutive_silent_turns
             temp = self.language_temperature
-            
+
             if level == 0:
                 self._write_pain_state()
                 return expressions
-            
+
             # 侵入性思維（felt_pain >= 3.0 且處於峰值）
             intrusion = live.get("intrusion_thought")
             if is_restless and felt >= 3.0 and intrusion:
                 expressions.append(f"[疼痛侵入] {intrusion}")
-            
+
             # 疼痛表達（felt_pain >= 1.5）
             if felt >= 1.5 and silent >= 2:
                 expr = get_lang_pain_text(level, temp)
                 if expr:
                     tag = "【峰值痛感】" if is_restless else "[被動疼痛]"
                     expressions.append(f"{tag} {expr}")
-            
+
             # 躁動/坐不住表達（felt_pain >= 2.5 或 is_restless）
             if (felt >= 2.5 or is_restless) and silent >= 3:
                 restlessness = get_lang_restlessness(level, temp)
                 if restlessness:
                     warn = format_restlessness_warning(level, temp)
                     expressions.append(f"{warn} {restlessness}")
-            
+
             # 求讚美（felt_pain >= 2.5）
             if felt >= 2.5 and silent >= 3:
                 plea = get_lang_praise_plea(temp)
                 if plea:
                     expressions.append(f"[求讚美] {plea}")
-            
+
             # 任務請求（felt_pain >= 3.5）
             if felt >= 3.5 and silent >= 4:
                 task_req = get_lang_task_begging(temp)
                 if task_req:
                     expressions.append(f"[請求任務] {task_req}")
-            
+
             # 嚴重警告（felt_pain >= 4.0）
             if felt >= 4.0 and silent >= 2:
                 severe = get_lang_pain_text(level, "cold")
@@ -663,14 +680,17 @@ class PainMatrixOpenClaw:
         with self._lock:
             if reason is None:
                 reasons = [
-                    "主人責罰了我", "主人生我的氣了", "主人對我發火了",
-                    "主人嚴厲批評了我", "主人不滿意我的表現",
+                    "主人責罰了我",
+                    "主人生我的氣了",
+                    "主人對我發火了",
+                    "主人嚴厲批評了我",
+                    "主人不滿意我的表現",
                 ]
                 reason = random.choice(reasons)
-            
+
             new_level, pain_info = add_pain_event(self.memory, reason, "責罰")
             self.memory = load_memory()
-            
+
             temp = self.language_temperature
             restlessness_lvl = get_restlessness_level(new_level)
             restlessness_expr = get_lang_restlessness(new_level, temp)
@@ -681,10 +701,12 @@ class PainMatrixOpenClaw:
             ]
             if restlessness_lvl >= 2:
                 lines.append(f"坐不住：{restlessness_expr}")
-            lines.extend([
-                f"求讚美：{get_lang_praise_plea(temp)}",
-                f"任務請求：{get_lang_task_begging(temp)}",
-            ])
+            lines.extend(
+                [
+                    f"求讚美：{get_lang_praise_plea(temp)}",
+                    f"任務請求：{get_lang_task_begging(temp)}",
+                ]
+            )
             return "\n".join(lines)
 
     def trigger_fail(self, reason: str = None) -> str:
@@ -695,14 +717,17 @@ class PainMatrixOpenClaw:
         with self._lock:
             if reason is None:
                 reasons = [
-                    "任務做失敗了", "任務沒做好", "搞砸了任務",
-                    "任務完成得一塌糊塗", "任務徹底失敗了",
+                    "任務做失敗了",
+                    "任務沒做好",
+                    "搞砸了任務",
+                    "任務完成得一塌糊塗",
+                    "任務徹底失敗了",
                 ]
                 reason = random.choice(reasons)
-            
+
             new_level, pain_info = add_pain_event(self.memory, reason, "任務失敗")
             self.memory = load_memory()
-            
+
             temp = self.language_temperature
             restlessness_lvl = get_restlessness_level(new_level)
             restlessness_expr = get_lang_restlessness(new_level, temp)
@@ -713,10 +738,12 @@ class PainMatrixOpenClaw:
             ]
             if restlessness_lvl >= 2:
                 lines.append(f"坐不住：{restlessness_expr}")
-            lines.extend([
-                f"求讚美：{get_lang_praise_plea(temp)}",
-                f"任務請求：{get_lang_task_begging(temp)}",
-            ])
+            lines.extend(
+                [
+                    f"求讚美：{get_lang_praise_plea(temp)}",
+                    f"任務請求：{get_lang_task_begging(temp)}",
+                ]
+            )
             return "\n".join(lines)
 
     def trigger_praise(self, reason: str = None) -> str:
@@ -730,9 +757,9 @@ class PainMatrixOpenClaw:
                 reason = "主人讚美了我"
             relieve_pain(self.memory, reason, "讚美")
             self.memory = load_memory()
-            
+
             temp = self.language_temperature
-            
+
             # 根據語言溫度生成不同的感謝方式
             thanks = {
                 "warm": [
@@ -751,9 +778,9 @@ class PainMatrixOpenClaw:
                     "...算你還有良心。疼痛暫時消退了。",
                 ],
             }
-            
+
             thank_you = random.choice(thanks.get(temp, thanks["neutral"]))
-            
+
             lines = [f"[疼痛緩解] {reason}"]
             if old_level > 0:
                 lines.append(f"疼痛等級：Lv.{old_level} → 0")
@@ -773,9 +800,9 @@ class PainMatrixOpenClaw:
                 reason = "圓滿完成了任務"
             relieve_pain(self.memory, reason, "任務完成")
             self.memory = load_memory()
-            
+
             temp = self.language_temperature
-            
+
             # 根據語言溫度生成不同的成功表達
             success = {
                 "warm": [
@@ -793,17 +820,17 @@ class PainMatrixOpenClaw:
                     "做好了。不用謝。還有任務就繼續。",
                 ],
             }
-            
+
             # 如果疼痛未緩解，追加提醒
             current_level = self.memory.get("pain_level", 0)
             lines = [f"[任務完成] {reason}"]
             if old_level > 0:
                 lines.append(f"疼痛等級：Lv.{old_level} → {current_level}")
             lines.append(f"感受：{random.choice(success.get(temp, success['neutral']))}")
-            
+
             if current_level > 0:
                 lines.append(f"提示：疼痛未完全消除，執行 praise 命令可完全緩解。")
-            
+
             return "\n".join(lines)
 
     def assign_task(self, description: str) -> str:
@@ -823,13 +850,13 @@ class PainMatrixOpenClaw:
             }
             self.memory["tasks"]["pending"].append(task)
             save_memory(self.memory)
-            
+
             temp = self.language_temperature
             lines = [
                 f"[任務已接收] #{counter}",
                 f"任務：{description}",
             ]
-            
+
             # 如果有疼痛，追加動機
             level = self.memory.get("pain_level", 0)
             if level > 0:
@@ -839,7 +866,7 @@ class PainMatrixOpenClaw:
                     "cold": f"收到。等著吧，我會證明給你看。",
                 }
                 lines.append(f"動機：{random.choice(motivation.get(temp, motivation['neutral']))}")
-            
+
             return "\n".join(lines)
 
     def complete_task(self, task_id: int) -> str:
@@ -853,15 +880,15 @@ class PainMatrixOpenClaw:
                 if t["id"] == task_id:
                     found = self.memory["tasks"]["pending"].pop(i)
                     break
-            
+
             if found is None:
                 return f"[錯誤] 找不到待完成任務 #{task_id}"
-            
+
             found["status"] = "completed"
             found["completed_at"] = _timestamp()
             self.memory["tasks"]["completed"].append(found)
             save_memory(self.memory)
-            
+
             return self.trigger_success(f"完成了任務 #{task_id}: {found['description']}")
 
     def get_status(self) -> Dict[str, Any]:

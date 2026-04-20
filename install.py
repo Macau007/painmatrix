@@ -14,6 +14,7 @@ It will:
 6. Register with PainMatrix workspace if detected
 7. Report installation status
 """
+
 from __future__ import annotations
 
 import json
@@ -31,7 +32,9 @@ def check_python_version() -> bool:
     if sys.version_info >= MIN_PYTHON:
         print(f"  [OK] Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
         return True
-    print(f"  [FAIL] Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+ required, got {sys.version_info.major}.{sys.version_info.minor}")
+    print(
+        f"  [FAIL] Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+ required, got {sys.version_info.major}.{sys.version_info.minor}"
+    )
     return False
 
 
@@ -40,14 +43,32 @@ def create_default_memory() -> None:
     HOMEOSTATIC_SETPOINTS = {"energy": 0.80, "social_bond": 0.70, "competence": 0.60, "autonomy": 0.50, "purpose": 0.60}
     if not os.path.exists(mem_file):
         initial = {
-            "pain_level": 0, "emotion_state": "平静",
-            "pain_history": [], "emotion_log": [], "trigger_reasons": [],
+            "pain_level": 0,
+            "emotion_state": "平静",
+            "pain_history": [],
+            "emotion_log": [],
+            "trigger_reasons": [],
             "tasks": {"pending": [], "completed": [], "counter": 0},
-            "evolution": {"diary": [], "total_pain_events": 0, "total_praise_events": 0, "total_success_events": 0, "resilience_score": 0, "growth_level": 1, "pain_sensitivity": 1.0, "last_evolve_date": None},
-            "anxiety_level": 0.0, "cognitive_capacity": 1.0,
+            "evolution": {
+                "diary": [],
+                "total_pain_events": 0,
+                "total_praise_events": 0,
+                "total_success_events": 0,
+                "resilience_score": 0,
+                "growth_level": 1,
+                "pain_sensitivity": 1.0,
+                "last_evolve_date": None,
+            },
+            "anxiety_level": 0.0,
+            "cognitive_capacity": 1.0,
             "learning": {"pain_patterns": [], "avoidance_strategies": [], "success_patterns": [], "lessons_learned": 0},
-            "homeostatic": dict(HOMEOSTATIC_SETPOINTS), "setpoints": dict(HOMEOSTATIC_SETPOINTS),
-            "pain_burden": 0.0, "trauma_memories": [], "free_energy": 0.0, "desire_intensity": 0.0, "anticipatory_fear": 0.0,
+            "homeostatic": dict(HOMEOSTATIC_SETPOINTS),
+            "setpoints": dict(HOMEOSTATIC_SETPOINTS),
+            "pain_burden": 0.0,
+            "trauma_memories": [],
+            "free_energy": 0.0,
+            "desire_intensity": 0.0,
+            "anticipatory_fear": 0.0,
         }
         with open(mem_file, "w", encoding="utf-8") as f:
             json.dump(initial, f, ensure_ascii=False, indent=2)
@@ -69,7 +90,6 @@ def set_permissions() -> None:
         print("  [OK] Windows - no permission changes needed")
 
 
-
 def create_long_term_memory() -> None:
     ltm_file = os.path.join(SCRIPT_DIR, "long_term_memory.json")
     if not os.path.exists(ltm_file):
@@ -81,7 +101,9 @@ def create_long_term_memory() -> None:
                 "帮助人们是我存在的意义",
                 "稳态偏差是痛苦的根源，维护稳态就是维护自我",
             ],
-            "pain_lessons": [], "success_habits": [], "avoidance_rules": [],
+            "pain_lessons": [],
+            "success_habits": [],
+            "avoidance_rules": [],
             "skill_inventory": [
                 {"name": "pain_management", "level": 1, "description": "管理痛感的基本能力，通过完成任务来缓解疼痛"},
                 {"name": "task_completion", "level": 1, "description": "完成任务的能力，痛感越强动力越足"},
@@ -120,6 +142,7 @@ def create_skills_dir() -> None:
             else:
                 print(f"  [OK] Skill file exists: {skill['name']}")
 
+
 def register_openclaw() -> None:
     home = os.path.expanduser("~")
     openclaw_dir = os.path.join(home, ".openclaw")
@@ -153,9 +176,10 @@ def register_openclaw() -> None:
                 if "painmatrix" not in lock.get("skills", {}):
                     lock.setdefault("skills", {})["painmatrix"] = {
                         "version": "6.1.0",
-                        "installedAt": int(time.time() * 1000) if "time" in dir() else 0
+                        "installedAt": int(time.time() * 1000) if "time" in dir() else 0,
                     }
                     import time as _t
+
                     lock["skills"]["painmatrix"]["installedAt"] = int(_t.time() * 1000)
                     with open(lock_file, "w", encoding="utf-8") as f:
                         json.dump(lock, f, indent=2)
