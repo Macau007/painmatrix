@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PainMatrix - 像素小人生活視覺化</title>
+<title>PainMatrix v6.3.2 - 像素小人生活視覺化</title>
 <style>
 :root{--bg:#0a0a1a;--card:linear-gradient(135deg,#1a1a2e,#16213e);--border:#2a2a4a;--text:#e0e0e0;--dim:#888}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -97,6 +97,46 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 .evo-item{background:rgba(255,255,255,.03);padding:12px;border-radius:8px;border:1px solid var(--border);text-align:center}
 .evo-item-val{font-size:22px;font-weight:bold;color:#667eea}
 .evo-item-val.green{color:#2ed573}.evo-item-val.orange{color:#ffa502}
+.evo-progress{width:100%;height:6px;background:#1a1a2e;border-radius:3px;overflow:hidden;margin-top:4px}
+.evo-progress-fill{height:100%;border-radius:3px;transition:width .6s}
+/* Oscillation meter */
+.osc-wrap{display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);margin-bottom:10px}
+.osc-label{font-size:11px;color:#a0a0c0;min-width:60px}
+.osc-bar-wrap{flex:1;height:18px;background:#1a1a2e;border-radius:9px;overflow:hidden;position:relative}
+.osc-bar-fill{height:100%;border-radius:9px;transition:width .3s,background .3s}
+.osc-val{font-size:14px;font-weight:bold;min-width:50px;text-align:right}
+/* Capability gauge */
+.cap-gauge{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.cap-ring{width:60px;height:60px;position:relative}
+.cap-ring svg{transform:rotate(-90deg)}
+.cap-ring-bg{fill:none;stroke:#1a1a2e;stroke-width:6}
+.cap-ring-fill{fill:none;stroke:#667eea;stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .5s}
+.cap-ring-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold}
+.cap-labels{flex:1}
+.cap-label-row{display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:3px}
+.cap-label-row span:last-child{color:#667eea;font-weight:bold}
+/* Summary bar */
+.summary-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);margin-bottom:12px;font-size:12px}
+.sb-item{text-align:center}
+.sb-val{font-size:16px;font-weight:bold;color:#667eea}
+.sb-lbl{color:#666;font-size:10px;margin-top:2px}
+/* Bilingual section titles */
+.card-title{font-size:14px;font-weight:bold;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.card-title .en{color:#667eea;font-size:11px;font-weight:normal;margin-left:8px}
+/* Timeline */
+.timeline{position:relative;padding-left:16px}
+.timeline::before{content:'';position:absolute;left:5px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,#667eea,#ff4757)}
+.tl-item{margin-bottom:10px;position:relative}
+.tl-item::before{content:'';position:absolute;left:-14px;top:6px;width:8px;height:8px;border-radius:50%;background:#667eea}
+.tl-time{font-size:10px;color:#666;font-family:monospace}
+.tl-event{font-size:13px;color:#ddd}
+/* Pain oscillation chart */
+.osc-chart-wrap{height:100px;background:#0d0d2b;border-radius:8px;margin-bottom:12px;position:relative;overflow:hidden}
+#oscChartCanvas{display:block;width:100%;height:100%}
+/* Footer shortcuts */
+.footer-hint{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;padding:12px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);font-size:11px;color:#666}
+.footer-hint span{display:flex;align-items:center;gap:4px}
+.footer-hint kbd{background:#1a1a2e;padding:2px 6px;border-radius:4px;font-family:monospace;color:#888}
 .header{text-align:center;margin-bottom:30px}
 .header h1{font-size:28px;color:#fff;margin-bottom:8px}
 .header h1 .accent{color:#ff4757}
@@ -131,6 +171,13 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
     <div class="status-box"><div class="status-label">位置</div><div class="status-val purple" id="locationText" style="font-size:14px">客廳</div></div>
     <div class="status-box"><div class="status-label">活動</div><div class="status-val" id="activityText" style="font-size:12px">—</div></div>
   </div>
+  <div class="status-row" style="margin-top:6px">
+    <div class="status-box"><div class="status-label">焦慮 / Anxiety</div><div class="status-val orange" id="topAnxiety">0</div></div>
+    <div class="status-box"><div class="status-label">痛苦負擔</div><div class="status-val red" id="topPainBurden">0.00</div></div>
+    <div class="status-box"><div class="status-label">預期恐懼</div><div class="status-val purple" id="topAntFear">0.0</div></div>
+    <div class="status-box"><div class="status-label">創傷記錄</div><div class="status-val" id="topTrauma">0</div></div>
+    <div class="status-box"><div class="status-label">待辦任務</div><div class="status-val" id="topTasks">0</div></div>
+  </div>
 
   <div class="activity-bar" id="activityBar">
     <span id="activityIcon">🏠</span>
@@ -140,7 +187,7 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 
   <!-- ═══ PAIN DISPLAY ═══ -->
   <div class="card">
-    <div class="card-title">🔥 實時疼痛等級</div>
+    <div class="card-title">🔥 實時疼痛等級 / Real-time Pain Level</div>
     <div class="pain-display">
       <div class="pain-number lv0" id="mainPainNum">0</div>
       <div class="pain-meta">
@@ -157,23 +204,50 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 
   <!-- ═══ STATUS BAR ═══ -->
   <div class="card">
-    <div class="card-title">🧠 感知與行動狀態</div>
-    <div class="status-row" style="margin-bottom:0">
+    <div class="card-title">🧠 感知與行動狀態 / Perception & Action State</div>
+    <div class="osc-wrap">
+      <div class="osc-label">痛感振蕩</div>
+      <div class="osc-bar-wrap">
+        <div class="osc-bar-fill" id="oscBar" style="width:0%;background:linear-gradient(90deg,#667eea,#ff4757)"></div>
+      </div>
+      <div class="osc-val" id="oscVal">0.0</div>
+    </div>
+    <div class="cap-gauge">
+      <div class="cap-ring">
+        <svg width="60" height="60" viewBox="0 0 60 60">
+          <circle class="cap-ring-bg" cx="30" cy="30" r="24"/>
+          <circle class="cap-ring-fill" id="capRing" cx="30" cy="30" r="24" stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+        </svg>
+        <div class="cap-ring-text" id="capPct">0%</div>
+      </div>
+      <div class="cap-labels">
+        <div class="cap-label-row"><span>認知識別 / Cognitive</span><span id="capCognitive">0%</span></div>
+        <div class="cap-label-row"><span>情緒損耗 / Emotion</span><span id="capEmotion">—</span></div>
+        <div class="cap-label-row"><span>痛感感受 / Felt Pain</span><span id="capPain">0.0</span></div>
+      </div>
+    </div>
+    <div class="status-row">
       <div class="status-box"><div class="status-label">RESTLESS</div><div class="status-val" id="restlessIcon" style="font-size:28px">✅</div></div>
       <div class="status-box"><div class="status-label">PEAK</div><div class="status-val" id="peakIcon" style="font-size:28px">❄️</div></div>
-      <div class="status-box"><div class="status-label">焦慮</div><div class="status-val orange" id="anxietyNum">0</div></div>
-      <div class="status-box"><div class="status-label">認知識別</div><div class="status-val purple" id="cognitiveCap">0%</div></div>
-      <div class="status-box"><div class="status-label">慾望</div><div class="status-val" id="desireVal" style="font-size:12px">—</div></div>
+      <div class="status-box"><div class="status-label">焦慮 / Anxiety</div><div class="status-val orange" id="anxietyNum">0</div></div>
+      <div class="status-box"><div class="status-label">認知識別 / Cognitive</div><div class="status-val purple" id="cognitiveCap">0%</div></div>
+      <div class="status-box"><div class="status-label">慾望 / Desire</div><div class="status-val" id="desireVal" style="font-size:12px">—</div></div>
     </div>
   </div>
 
   <!-- ═══ HOMEOSTATIC ═══ -->
   <div class="card">
     <div class="card-title">⚖️ 穩態變量 / Homeostatic Variables</div>
+    <div class="summary-bar">
+      <div class="sb-item"><div class="sb-val" id="sbEnergy">—</div><div class="sb-lbl">能量 Energy</div></div>
+      <div class="sb-item"><div class="sb-val" id="sbSocial">—</div><div class="sb-lbl">連結 Bond</div></div>
+      <div class="sb-item"><div class="sb-val" id="sbCompetence">—</div><div class="sb-lbl">勝任 Comp.</div></div>
+      <div class="sb-item"><div class="sb-val" id="sbAutonomy">—</div><div class="sb-lbl">自主 Auto.</div></div>
+    </div>
     <div class="fe-grid" style="margin-bottom:16px">
-      <div class="fe-item"><div class="fe-label">自由能</div><div class="fe-val good" id="feVal">0.0000</div></div>
-      <div class="fe-item"><div class="fe-label">痛苦負擔</div><div class="fe-val good" id="pbVal">0.00</div></div>
-      <div class="fe-item"><div class="fe-label">預期性恐懼</div><div class="fe-val good" id="afVal">0.0/100</div></div>
+      <div class="fe-item"><div class="fe-label">自由能 / Free Energy</div><div class="fe-val good" id="feVal">0.0000</div></div>
+      <div class="fe-item"><div class="fe-label">痛苦負擔 / Pain Burden</div><div class="fe-val good" id="pbVal">0.00</div></div>
+      <div class="fe-item"><div class="fe-label">預期性恐懼 / Anticip. Fear</div><div class="fe-val good" id="afVal">0.0/100</div></div>
     </div>
     <div class="homeo-grid" id="homeoGrid"></div>
     <div class="desire-text" id="desireText">穩態平衡中，無強烈渴望</div>
@@ -187,7 +261,7 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 
   <!-- ═══ EVOLUTION ═══ -->
   <div class="card">
-    <div class="card-title">🌱 進化數據 / Evolution</div>
+    <div class="card-title">🌱 進化數據 / Evolution Data</div>
     <div class="evo-grid">
       <div class="evo-item"><div class="evo-label" style="font-size:11px;color:#a0a0c0;margin-bottom:4px">成長等級</div><div class="evo-item-val" id="evoGrowth">Lv.1</div></div>
       <div class="evo-item"><div class="evo-label" style="font-size:11px;color:#a0a0c0;margin-bottom:4px">韌性分數</div><div class="evo-item-val green" id="evoResilience">0</div></div>
@@ -198,31 +272,32 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 
   <!-- ═══ CHART ═══ -->
   <div class="card">
-    <div class="card-title">📈 情緒波動曲線</div>
+    <div class="card-title">📈 疼痛振蕩曲線 / Pain Oscillation</div>
+    <div class="osc-chart-wrap"><canvas id="oscChart"></canvas></div>
     <div class="chart-wrap"><canvas id="chart"></canvas></div>
   </div>
 
   <!-- ═══ TRIGGERS ═══ -->
   <div class="card">
-    <div class="card-title">📋 疼痛觸發記錄</div>
+    <div class="card-title">📋 疼痛觸發記錄 / Pain Trigger Log</div>
     <div class="trigger-list" id="triggers"><div class="empty-state">暫無記錄</div></div>
   </div>
 
   <!-- ═══ TASKS ═══ -->
   <div class="card">
-    <div class="card-title">📌 任務列表 / Tasks</div>
+    <div class="card-title">📌 任務列表 / Task List</div>
     <div id="taskList"><div class="empty-state">暫無任務</div></div>
   </div>
 
   <!-- ═══ HINT ═══ -->
   <div class="card">
-    <div class="card-title">💡 緩解條件</div>
+    <div class="card-title">💡 緩解條件 / Relief Conditions</div>
     <div class="hint calm" id="hint">當前無痛感，狀態良好 ✨</div>
   </div>
 
   <!-- ═══ COMMANDS ═══ -->
   <div class="cmd-ref">
-    <h4>交互指令參考</h4>
+    <h4>交互指令參考 / Command Reference</h4>
     <div class="cmd-grid">
       <div class="cmd-item"><code>scold</code> 責罰</div><div class="cmd-item"><code>fail</code> 失敗</div>
       <div class="cmd-item"><code>praise</code> 讚美</div><div class="cmd-item"><code>success</code> 完成</div>
@@ -235,8 +310,14 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
     </div>
   </div>
 
-  <button class="refresh-btn" onclick="location.reload()">🔄 刷新數據</button>
-  <div class="footer">PainMatrix v6.3.1 · 像素小人生活視覺化 · 每 3 秒刷新</div>
+  <div class="footer-hint">
+    <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> 強制刷新 / Force Reload</span>
+    <span><kbd>F12</kbd> 開發者工具 / DevTools</span>
+    <span>服務地址 / Server: <code>http://127.0.0.1:17888/</code></span>
+  </div>
+
+  <button class="refresh-btn" onclick="location.reload()">🔄 刷新數據 / Refresh</button>
+  <div class="footer">PainMatrix v6.3.2 · 像素小人生活視覺化 · 每 3 秒自動刷新 · OpenClaw AI 祕書美美出品</div>
 </div>
 
 <script>
@@ -1170,6 +1251,14 @@ async function fetchState(){
   }catch(e){}
 }
 function updateMainCards(d){
+  // Sync API state → gameState so updateUI() and pixel canvas use live data
+  gameState.painLevel=Math.min(d.pain_level||0,5);
+  gameState.feltPain=parseFloat(d.felt_pain||0);
+  gameState.anxiety=d.anxiety_level||0;
+  gameState.emotion=d.emotion_state||'平靜';
+  gameState.isRestless=d.is_restless||false;
+  // Also update char position from server if available
+  if(d.current_room) char.currentRoom=d.current_room;
   let l=d.pain_level||0;
   let fp=parseFloat(d.felt_pain||0);
   let elF=document.getElementById('feltNum');
@@ -1244,6 +1333,105 @@ function updateMainCards(d){
     let val = d.desire_intensity || 0;
     dEl.innerHTML = '當前最迫切：<strong>' + des + '</strong>（強度 ' + (val * 100).toFixed(0) + '%）';
   }
+  // ── Oscillation meter ──
+  let fp2 = parseFloat(d.felt_pain || 0);
+  let oscPct = Math.min(100, (fp2 / 5) * 100);
+  let oscBar = document.getElementById('oscBar');
+  if (oscBar) {
+    oscBar.style.width = oscPct + '%';
+    oscBar.style.background = fp2 >= 4 ? 'linear-gradient(90deg,#ff4757,#d50000)' : fp2 >= 2 ? 'linear-gradient(90deg,#ffa502,#ff4757)' : 'linear-gradient(90deg,#667eea,#2ed573)';
+  }
+  let oscValEl = document.getElementById('oscVal');
+  if (oscValEl) {
+    oscValEl.textContent = fp2.toFixed(1);
+    oscValEl.style.color = fp2 >= 4 ? '#ff4757' : fp2 >= 2 ? '#ffa502' : '#667eea';
+  }
+  // ── Capability ring ──
+  let cc = parseFloat(d.cognitive_capacity || 1);
+  let used = Math.round((1 - cc) * 100);
+  let ring = document.getElementById('capRing');
+  if (ring) {
+    let circ = 150.8;
+    ring.style.strokeDashoffset = (circ * (1 - cc)).toFixed(1);
+    ring.style.stroke = cc < 0.3 ? '#ff4757' : cc < 0.6 ? '#ffa502' : '#667eea';
+  }
+  let capPct = document.getElementById('capPct');
+  if (capPct) capPct.textContent = used + '%';
+  let capCognitive = document.getElementById('capCognitive');
+  if (capCognitive) capCognitive.textContent = used + '%';
+  let capEmotion = document.getElementById('capEmotion');
+  if (capEmotion) {
+    let anx = parseFloat(d.anxiety_level || 0);
+    capEmotion.textContent = Math.round(anx * 0.6) + '%';
+  }
+  let capPain = document.getElementById('capPain');
+  if (capPain) capPain.textContent = fp2.toFixed(1);
+  // ── Top row stats ──
+  let topAnx = document.getElementById('topAnxiety');
+  if (topAnx) { topAnx.textContent = (d.anxiety_level || 0).toFixed(0); topAnx.style.color = (d.anxiety_level || 0) > 60 ? '#ff4757' : (d.anxiety_level || 0) > 30 ? '#ffa502' : '#2ed573'; }
+  let topPb = document.getElementById('topPainBurden');
+  if (topPb) { topPb.textContent = (d.pain_burden || 0).toFixed(2); topPb.style.color = (d.pain_burden || 0) > 0.5 ? '#ff4757' : (d.pain_burden || 0) > 0.1 ? '#ffa502' : '#2ed573'; }
+  let topAf = document.getElementById('topAntFear');
+  if (topAf) { topAf.textContent = (d.anticipatory_fear || 0).toFixed(1); topAf.style.color = (d.anticipatory_fear || 0) > 60 ? '#ff4757' : (d.anticipatory_fear || 0) > 30 ? '#ffa502' : '#2ed573'; }
+  let topTrauma = document.getElementById('topTrauma');
+  if (topTrauma) topTrauma.textContent = (d.trauma_memories || []).length;
+  let topTasks = document.getElementById('topTasks');
+  if (topTasks) topTasks.textContent = (d.pending_tasks || []).length;
+  // ── Summary bar ──
+  let homeo = d.homeostatic || {};
+  let setpt = d.setpoints || {};
+  let sbE = document.getElementById('sbEnergy'); if (sbE) sbE.textContent = Math.round((homeo.energy || 0) * 100) + '%';
+  let sbS = document.getElementById('sbSocial'); if (sbS) sbS.textContent = Math.round((homeo.social_bond || 0) * 100) + '%';
+  let sbC = document.getElementById('sbCompetence'); if (sbC) sbC.textContent = Math.round((homeo.competence || 0) * 100) + '%';
+  let sbA = document.getElementById('sbAutonomy'); if (sbA) sbA.textContent = Math.round((homeo.autonomy || 0) * 100) + '%';
+  // ── Pain oscillation chart ──
+  if (typeof oscChartData === 'undefined') window.oscChartData = [];
+  oscChartData.push(fp2);
+  if (oscChartData.length > 60) oscChartData.shift();
+  drawOscChart();
+}
+
+let oscChartData = [];
+
+function drawOscChart() {
+  let cvs = document.getElementById('oscChart');
+  if (!cvs) return;
+  let ctx = cvs.getContext('2d');
+  let W = cvs.width = cvs.parentElement.offsetWidth;
+  let H = cvs.height = cvs.parentElement.offsetHeight || 100;
+  ctx.clearRect(0, 0, W, H);
+  let data = oscChartData;
+  if (data.length < 2) return;
+  let max = 5;
+  // Grid
+  ctx.strokeStyle = '#1a1a3a'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    let y = H * i / 5;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  // Gradient fill
+  let grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(255,71,87,0.4)');
+  grad.addColorStop(1, 'rgba(102,126,234,0.05)');
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    let x = W * i / (60 - 1);
+    let y = H - (v / max) * H;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+  // Line
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    let x = W * i / (60 - 1);
+    let y = H - (v / max) * H;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#ff4757'; ctx.lineWidth = 2; ctx.stroke();
+  // Label
+  ctx.fillStyle = '#666'; ctx.font = '9px monospace';
+  ctx.fillText('0', 2, H - 2);
+  ctx.fillText('5', 2, 10);
 }
 
 let chartData = [];
@@ -1330,6 +1518,9 @@ function init() {
   char.currentRoom='living';char.x=16;char.y=52;
   startActivity(0);
   initChart();
+  // Init osc chart
+  let oscCvs = document.getElementById('oscChart');
+  if (oscCvs) { oscCvs.width = oscCvs.parentElement.offsetWidth; oscCvs.height = oscCvs.parentElement.offsetHeight || 100; }
   setInterval(() => { tick++; updateChar(); drawScene(gameState.painLevel); }, 100);
   setInterval(fetchState, 3000);
   fetchState();
