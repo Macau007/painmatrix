@@ -43,9 +43,15 @@ def load():
             _cache["dominant_desire"] = mem.get("dominant_desire", "task_completion")
             _cache["wellbeing"] = mem.get("wellbeing", 100)
             _cache["emotion_log"] = mem.get("emotion_log", [])
+            _cache["pending_tasks"] = mem.get("tasks", {}).get("pending", [])
+            _cache["pain_triggers"] = mem.get("trigger_reasons", [])
             _cache["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S")
             _cache["felt_pain"] = round(_pg.felt_pain, 2)
             _cache["is_restless"] = _pg.is_restless
+            _cache["_in_peak"] = _pg._in_peak
+            _cache["_felt_pain"] = round(_pg.felt_pain, 2)
+            _cache["_base_level"] = _pg._base_level
+            _cache["cognitive_capacity"] = round(max(0.05, 1.0 - (_pg.felt_pain / 5.0) * 0.75), 3)
             _write_pain_state_file(_cache)
     except Exception as e:
         print("[API load error]", e)
