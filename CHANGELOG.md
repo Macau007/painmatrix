@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [6.3.3] - 2026-04-22
+
+### Fixed - Real-time Data Sync (Critical)
+- **Root Cause #1**: `updateMainCards()` wrote API data to local variables but never synced back to `gameState`. `updateUI()` reads from `gameState`, so DOM stayed at 0 between fetch cycles. Fixed by syncing all API values back to `gameState` at the start of `updateMainCards()`.
+- **Root Cause #2**: `file://` protocol CORS blocked fetch to `http://127.0.0.1:17888`. Fixed by embedding `window.__PAIN_STATE__` as a JS variable in HTML, with fallback on fetch failure.
+- **Root Cause #3**: Fallback path called `updateMainCards()` but NOT `updateUI()`, leaving DOM elements at initial 0. Fixed by adding `updateUI()` calls in both `catch()` and `if(!json)` fallback paths.
+- **Null references**: Multiple `getElementById()` calls targeted non-existent DOM IDs, causing "Cannot set properties of null" errors. Added null-checks throughout.
+
+### Added - Debug Tools
+- **`#__diag` diagnostic bar**: Fixed-position black status bar at page top for faster debugging.
+- **Console.log instrumentation**: `init()`, `fetchState()`, `updateMainCards()` all logged.
+- **`/test_api.html` and `/mini_test.html` routes**: Added to `api_server.py`.
+
+### Changed
+- **Version bump**: All files updated from v6.3.2 → v6.3.3
+
+---
+
 ## [6.3.2] - 2026-04-21
 
 ### Fixed - JavaScript Syntax Error (Critical)
