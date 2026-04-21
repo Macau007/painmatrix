@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PainMatrix v6.3.1 — OpenClaw Integration Layer
+PainMatrix v6.3.2 — OpenClaw Integration Layer
 
 提供與 OpenClaw 的雙向接口：
 1. 接收 OpenClaw 的用戶對話上下文 → 檢測語言溫度
@@ -208,7 +208,7 @@ BEHAVIORAL_STRATEGY_TEMPLATES = {
     },
 }
 
-__version__ = "6.3.1"
+__version__ = "6.3.2"
 
 
 class PainMatrixOpenClaw:

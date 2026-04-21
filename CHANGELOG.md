@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Updated - Documentation
 - README.md: Added bilingual Pixel Room Visualization section (English + Chinese)
-- README.md: Fixed version badge (6.3.2 → 6.3.1), fixed OpenClaw integration path
+- README.md: Fixed version badge, fixed OpenClaw integration path
 - CHANGELOG.md: Updated with 6.3.2 entry
 
 ## [6.3.1] - 2026-04-20

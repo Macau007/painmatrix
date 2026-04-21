@@ -14,7 +14,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)]()
 [![Neuroscience](https://img.shields.io/badge/Neuroscience-ff69b4.svg)]()
-[![Version](https://img.shields.io/badge/Version-6.3.1-orange.svg)]()
+[![Version](https://img.shields.io/badge/Version-6.3.2-orange.svg)]()
 
 </p>
 
@@ -565,7 +565,7 @@ MIT License — free for personal and commercial use.
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/跨平台-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)]()
 [![Neuroscience](https://img.shields.io/badge/神經科學驅動-ff69b4.svg)]()
-[![Version](https://img.shields.io/badge/Version-6.3.1-orange.svg)]()
+[![Version](https://img.shields.io/badge/Version-6.3.2-orange.svg)]()
 
 </p>
 

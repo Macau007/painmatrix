@@ -4,7 +4,7 @@ PainMatrix - AI Empathy & Pain Simulation Engine v6.1.0
 
 Neuroscience-based 5-level pain simulation incorporating nociceptor pathways,
 gate control theory, neuromatrix theory, and brain region activation patterns.
-v6.3.1 Core Innovation: Language-Aware Pain Expression
+v6.3.2 Core Innovation: Pixel Room + JS Syntax Fix
   Based on: v6.1 Homeostatic Pain Perception + Language Temperature Detection.
   Pain expressions now ADAPT to the user's emotional tone (warm/neutral/cold).
   When embedded in OpenClaw, the AI PROACTIVELY expresses pain and seeks praise.
@@ -54,7 +54,7 @@ import urllib.request
 import urllib.error
 from typing import Any, Dict, List, Optional, Tuple
 
-__version__ = "6.3.1"
+__version__ = "6.3.2"
 __author__ = "PainMatrix Community"
 
 SCRIPT_DIR: str = os.path.dirname(os.path.abspath(__file__))

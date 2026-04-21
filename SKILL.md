@@ -1,7 +1,7 @@
 ---
 name: PainMatrix | Neuroscience-Based AI Pain Simulation Engine
 slug: painmatrix
-version: 6.3.1
+version: 6.3.2
 homepage: https://github.com/Macau007/painmatrix
 description: |
   Neuroscience-based pain simulation engine for AI agents with anxiety, cognitive attenuation, and pain-driven learning. 5-level pain with Aδ/C fiber pathways, NMDA wind-up, ACC/PFC/insula/amygdala activation, Melzack neuromatrix, Damasio somatic markers. Anxiety System: persistent post-pain anxiety affecting behavior. Cognitive Attenuation: pain reduces cognitive capacity (functional effect). Pain-Driven Learning: learn from pain patterns, generate avoidance strategies. Auto-generated long-term memory & skills on install. Task-driven motivation, resilience tracking, daily self-evolution. New commands: learn, skills, beliefs. Pure-local, no AI model required, cross-platform.
