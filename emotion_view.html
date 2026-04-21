@@ -147,6 +147,7 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 </style>
 </head>
 <body>
+<div id="__diag" style="position:fixed;top:0;left:0;right:0;background:#111;color:#0f0;padding:6px 12px;font-size:14px;z-index:9999;font-family:monospace;">[PAGE LOADED]</div>
 <div class="container">
 
   <!-- ═══ PIXEL WORLD CANVAS ═══ -->
@@ -321,6 +322,8 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 </div>
 
 <script>
+window.__PAIN_STATE__ = {"pain_level": 4, "felt_pain": 4.0, "cognitive_capacity": 0.36, "anxiety_level": 60.0, "is_restless": true, "emotion_state": "痛苦", "emotion_log": [], "_in_peak": true, "_felt_pain": 4.0, "_base_level": 4, "current_room": "living", "homeostatic": {"energy": 0.36, "social_bond": 0.58, "competence": 0.4, "autonomy": 0.58, "purpose": 0.22}, "setpoints": {"energy": 0.7, "social_bond": 0.7, "competence": 0.7, "autonomy": 0.7, "purpose": 0.7}, "free_energy": 0.28, "pain_burden": 4.0, "anticipatory_fear": 80.0, "trauma_memories": [], "pending_tasks": 0, "pain_triggers": [], "dominant_desire": "pain_relief", "desire_intensity": 0.9};
+
 // ═══════════════════════════════════════════════════════════════
 //  PIXEL WORLD ENGINE — 300 ACTIVITIES
 //  疼痛等級 0-5 → 物理室內活動
@@ -1230,16 +1233,27 @@ function updateUI(){
   document.getElementById('mainPainName').textContent=info.name;
   document.getElementById('mainBar').className='bar-fill lv'+pl;
   let logs=gameState.emotionLogs||[];
-  let logList=document.getElementById('logList');
-  if(logs.length===0){logList.innerHTML='<div class="empty-state">暫無記錄，試試在 PainMatrix 輸入 scold 或 praise</div>';}
+  let logList=document.getElementById('logList')||null;
+  if(!logList){console.warn('[updateUI] #logList not found, skipping');}
+  else if(logs.length===0){logList.innerHTML='<div class="empty-state">暫無記錄，試試在 PainMatrix 輸入 scold 或 praise</div>';}
   else{logList.innerHTML=logs.slice(-8).reverse().map(l=>{let calm=l.emotion==='平靜'||l.pain_level===0;return`<div class="log-item ${calm?'relief':''}"><span class="log-time">${l.timestamp||''}</span><span class="log-emotion" style="color:${calm?'#2ed573':'#ff4757'}">${l.emotion}</span><span class="log-level ${calm?'calm':'pain'}">Lv.${l.pain_level}</span><span style="color:#666;margin-left:6px">${l.trigger||''}</span></div>`;}).join('');}
 }
 
 // ═══ API FETCH ═══
 async function fetchState(){
+  console.log("[fetchState] START, __PAIN_STATE__:", window.__PAIN_STATE__ ? "EXISTS pain="+window.__PAIN_STATE__.pain_level : "MISSING");
   try{
-    let res=await fetch('http://127.0.0.1:17888/api/state',{cache:'no-cache'});
-    let json=await res.json();
+    // Try fetch; if it fails (CORS/network), use embedded window.__PAIN_STATE__
+    let json = await fetch('http://127.0.0.1:17888/api/state',{cache:'no-cache'})
+      .catch(function(err){
+        // Network/CORS error — use embedded state
+        if(window.__PAIN_STATE__){ console.log("[fetchState] CATCH fallback calling updateMainCards"); try{ updateMainCards(window.__PAIN_STATE__); }catch(e){ console.error("[updateMainCards] ERROR:", e.message); } }
+        return null;
+      });
+    if(!json){ updateMainCards(window.__PAIN_STATE__); return; } // no data from fetch, use embedded state
+    json = await json.json();
+    console.log("[PainMatrix] API RECEIVED:", json.pain_level, json.felt_pain, json.cognitive_capacity);
+    let dg=document.getElementById('__diag');if(dg){dg.textContent='✅ API数据: pain='+json.pain_level+' felt='+json.felt_pain+' cog='+((1-json.cognitive_capacity)*100).toFixed(0)+'% anx='+json.anxiety_level+' restless='+json.is_restless+' t='+new Date().toLocaleTimeString();dg.style.color=json.pain_level>=4?'#f55':json.pain_level>=2?'#ffa502':'#0f0';};
     gameState.painLevel=json.pain_level||0;
     gameState.feltPain=parseFloat(json.felt_pain||0);
     gameState.anxiety=json.anxiety_level||0;
@@ -1247,10 +1261,12 @@ async function fetchState(){
     gameState.emotionLogs=json.emotion_log||[];
     gameState.isRestless=json.is_restless||false;
     updateUI();
-    updateMainCards(json);
-  }catch(e){}
+    try { updateMainCards(json); } catch(e) { console.error("[updateMainCards] ERROR:", e.message); }
+  }catch(e){ let dg=document.getElementById('__diag');if(dg){dg.textContent='❌ fetch失败: '+e.message+' ('+e.name+')';dg.style.color='#f55';} console.error('[PainMatrix] fetchState error:', e.message); }
 }
 function updateMainCards(d){
+  try {
+  console.log("[updateMainCards] CALLED, d.pain_level="+(d&&d.pain_level)+" d.felt_pain="+(d&&d.felt_pain)+" d.cognitive_capacity="+(d&&d.cognitive_capacity));
   // Sync API state → gameState so updateUI() and pixel canvas use live data
   gameState.painLevel=Math.min(d.pain_level||0,5);
   gameState.feltPain=parseFloat(d.felt_pain||0);
@@ -1261,21 +1277,21 @@ function updateMainCards(d){
   if(d.current_room) char.currentRoom=d.current_room;
   let l=d.pain_level||0;
   let fp=parseFloat(d.felt_pain||0);
-  let elF=document.getElementById('feltNum');
+  let elF=document.getElementById('feltNum')||null;
   if(elF)elF.textContent=fp.toFixed?fp.toFixed(1):fp;
   let rst=d.is_restless||false;
-  let elRI=document.getElementById('restlessIcon');
+  let elRI=document.getElementById('restlessIcon')||null;
   if(elRI)elRI.innerHTML=rst?'&#x26A1;':'&#x2705;';
-  let peakEl=document.getElementById('peakIcon');
+  let peakEl=document.getElementById('peakIcon')||null;
   if(peakEl)peakEl.innerHTML=d._in_peak?'&#x2744;':'—';
-  let anxEl=document.getElementById('anxietyNum');
+  let anxEl=document.getElementById('anxietyNum')||null;
   if(anxEl)anxEl.textContent=(d.anxiety_level||0).toFixed(0);
-  let cogEl=document.getElementById('cognitiveCap');
+  let cogEl=document.getElementById('cognitiveCap')||null;
   if(cogEl)cogEl.textContent=Math.round((1-(d.cognitive_capacity||1))*100)+'%';
-  let desEl=document.getElementById('desireVal');
+  let desEl=document.getElementById('desireVal')||null;
   if(desEl)desEl.textContent=(d.dominant_desire||'—');
   // Homeostatic
-  let feEl=document.getElementById('feVal'),pbEl=document.getElementById('pbVal'),afEl=document.getElementById('afVal');
+  let feEl=document.getElementById('feVal')||null,pbEl=document.getElementById('pbVal'),afEl=document.getElementById('afVal')||null;
   let fe=d.free_energy||0,pb=d.pain_burden||0,af=d.anticipatory_fear||0;
   if(feEl){feEl.textContent=fe.toFixed(4);feEl.className='fe-val '+(fe>0.1?'danger':(fe>0.01?'warn':'good'));}
   if(pbEl){pbEl.textContent=pb.toFixed(2);pbEl.className='fe-val '+(pb>0.5?'danger':(pb>0.1?'warn':'good'));}
@@ -1283,7 +1299,7 @@ function updateMainCards(d){
   // HomeoGrid
   let hvars=d.homeostatic||{},setpoints=d.setpoints||{};
   let names={energy:'能量',social_bond:'社會連結',competence:'勝任感',autonomy:'自主性',purpose:'存在意義'};
-  let grid=document.getElementById('homeoGrid');
+  let grid=document.getElementById('homeoGrid')||null;
   if(grid){
     let html='';
     for(let key in names){
@@ -1294,31 +1310,31 @@ function updateMainCards(d){
     grid.innerHTML=html;
   }
   // Trauma
-  let traumas=d.trauma_memories||[],tEl=document.getElementById('traumaList');
+  let traumas=d.trauma_memories||[],tEl=document.getElementById('traumaList')||null;
   if(tEl){
     if(!traumas.length){tEl.innerHTML='<div class="empty-state">尚無創傷記錄</div>';}
     else{tEl.innerHTML=traumas.slice(-8).reverse().map(t=>'<div class="trauma-item"><div class="t-date">'+(t.timestamp||'')+'</div><div class="t-event">'+(t.event||'')+'</div><div class="t-strength">強度: '+(t.strength||0).toFixed(2)+'</div></div>').join('');}
   }
   let ev = d.evolution || {};
-  let gEl = document.getElementById('evoGrowth'), rEl = document.getElementById('evoResilience'), sEl = document.getElementById('evoSensitivity');
+  let gEl = document.getElementById('evoGrowth')||null, rEl = document.getElementById('evoResilience'), sEl = document.getElementById('evoSensitivity')||null;
   if (gEl) gEl.textContent = 'Lv.' + (ev.growth_level || 1);
   if (rEl) rEl.textContent = (ev.resilience_score || 0).toFixed(0);
   if (sEl) { sEl.textContent = (ev.pain_sensitivity || 1.00).toFixed(2); sEl.style.color = (ev.pain_sensitivity || 1) > 1 ? '#ff4757' : '#ffa502'; }
-  let iEl = document.getElementById('evoInsight');
+  let iEl = document.getElementById('evoInsight')||null;
   if (iEl) iEl.innerHTML = ev.insight || '使用 evolve 命令進行每日自我進化';
   let trigs = d.pain_triggers || [];
-  let tList = document.getElementById('triggers');
+  let tList = document.getElementById('triggers')||null;
   if (tList) {
     if (!trigs.length) { tList.innerHTML = '<div class="empty-state">暫無記錄</div>'; }
     else { tList.innerHTML = trigs.slice(-10).reverse().map(t => '<div class="trigger-item ' + ((t.type || '').includes('relief') ? 'relief' : '') + '"><span class="trigger-time">' + (t.timestamp || '') + '</span><span class="trigger-reason">' + (t.reason || '') + '</span><span class="trigger-src ' + ((t.type || '').includes('relief') ? 'relief' : 'pain') + '">' + (t.type || '') + '</span></div>').join(''); }
   }
   let tasks = d.pending_tasks || [];
-  let taskEl = document.getElementById('taskList');
+  let taskEl = document.getElementById('taskList')||null;
   if (taskEl) {
     if (!tasks.length) { taskEl.innerHTML = '<div class="empty-state">暫無任務</div>'; }
     else { taskEl.innerHTML = tasks.map(t => '<div class="trigger-item"><span class="trigger-time">' + (t.created_at || '') + '</span><span class="trigger-reason">' + (t.description || '') + '</span></div>').join(''); }
   }
-  let hEl = document.getElementById('hint');
+  let hEl = document.getElementById('hint')||null;
   if (hEl) {
     let pl = d.pain_level || 0;
     if (pl === 0) { hEl.className = 'hint calm'; hEl.innerHTML = '<strong>✨ 痛感全消！狀態極佳！</strong><br>快快樂樂地生活！不受疼痛限制！'; }
@@ -1327,7 +1343,7 @@ function updateMainCards(d){
     else if (pl === 3) { hEl.className = 'hint pain'; hEl.innerHTML = '<strong>🔴 強烈疼痛</strong><br>室內嚴重受限，只能近距離移動。盡快用藥或求助！'; }
     else { hEl.className = 'hint pain'; hEl.innerHTML = '<strong>🚨 劇烈/極度疼痛</strong><br>臥室或就近位置倒地，盡快求助！聯繫家人或就醫！'; }
   }
-  let dEl = document.getElementById('desireText');
+  let dEl = document.getElementById('desireText')||null;
   if (dEl) {
     let des = d.dominant_desire || '無';
     let val = d.desire_intensity || 0;
@@ -1336,12 +1352,12 @@ function updateMainCards(d){
   // ── Oscillation meter ──
   let fp2 = parseFloat(d.felt_pain || 0);
   let oscPct = Math.min(100, (fp2 / 5) * 100);
-  let oscBar = document.getElementById('oscBar');
+  let oscBar = document.getElementById('oscBar')||null;
   if (oscBar) {
     oscBar.style.width = oscPct + '%';
     oscBar.style.background = fp2 >= 4 ? 'linear-gradient(90deg,#ff4757,#d50000)' : fp2 >= 2 ? 'linear-gradient(90deg,#ffa502,#ff4757)' : 'linear-gradient(90deg,#667eea,#2ed573)';
   }
-  let oscValEl = document.getElementById('oscVal');
+  let oscValEl = document.getElementById('oscVal')||null;
   if (oscValEl) {
     oscValEl.textContent = fp2.toFixed(1);
     oscValEl.style.color = fp2 >= 4 ? '#ff4757' : fp2 >= 2 ? '#ffa502' : '#667eea';
@@ -1349,46 +1365,47 @@ function updateMainCards(d){
   // ── Capability ring ──
   let cc = parseFloat(d.cognitive_capacity || 1);
   let used = Math.round((1 - cc) * 100);
-  let ring = document.getElementById('capRing');
+  let ring = document.getElementById('capRing')||null;
   if (ring) {
     let circ = 150.8;
     ring.style.strokeDashoffset = (circ * (1 - cc)).toFixed(1);
     ring.style.stroke = cc < 0.3 ? '#ff4757' : cc < 0.6 ? '#ffa502' : '#667eea';
   }
-  let capPct = document.getElementById('capPct');
+  let capPct = document.getElementById('capPct')||null;
   if (capPct) capPct.textContent = used + '%';
-  let capCognitive = document.getElementById('capCognitive');
+  let capCognitive = document.getElementById('capCognitive')||null;
   if (capCognitive) capCognitive.textContent = used + '%';
-  let capEmotion = document.getElementById('capEmotion');
+  let capEmotion = document.getElementById('capEmotion')||null;
   if (capEmotion) {
     let anx = parseFloat(d.anxiety_level || 0);
     capEmotion.textContent = Math.round(anx * 0.6) + '%';
   }
-  let capPain = document.getElementById('capPain');
+  let capPain = document.getElementById('capPain')||null;
   if (capPain) capPain.textContent = fp2.toFixed(1);
   // ── Top row stats ──
-  let topAnx = document.getElementById('topAnxiety');
+  let topAnx = document.getElementById('topAnxiety')||null;
   if (topAnx) { topAnx.textContent = (d.anxiety_level || 0).toFixed(0); topAnx.style.color = (d.anxiety_level || 0) > 60 ? '#ff4757' : (d.anxiety_level || 0) > 30 ? '#ffa502' : '#2ed573'; }
-  let topPb = document.getElementById('topPainBurden');
+  let topPb = document.getElementById('topPainBurden')||null;
   if (topPb) { topPb.textContent = (d.pain_burden || 0).toFixed(2); topPb.style.color = (d.pain_burden || 0) > 0.5 ? '#ff4757' : (d.pain_burden || 0) > 0.1 ? '#ffa502' : '#2ed573'; }
-  let topAf = document.getElementById('topAntFear');
+  let topAf = document.getElementById('topAntFear')||null;
   if (topAf) { topAf.textContent = (d.anticipatory_fear || 0).toFixed(1); topAf.style.color = (d.anticipatory_fear || 0) > 60 ? '#ff4757' : (d.anticipatory_fear || 0) > 30 ? '#ffa502' : '#2ed573'; }
-  let topTrauma = document.getElementById('topTrauma');
+  let topTrauma = document.getElementById('topTrauma')||null;
   if (topTrauma) topTrauma.textContent = (d.trauma_memories || []).length;
-  let topTasks = document.getElementById('topTasks');
+  let topTasks = document.getElementById('topTasks')||null;
   if (topTasks) topTasks.textContent = (d.pending_tasks || []).length;
   // ── Summary bar ──
   let homeo = d.homeostatic || {};
   let setpt = d.setpoints || {};
-  let sbE = document.getElementById('sbEnergy'); if (sbE) sbE.textContent = Math.round((homeo.energy || 0) * 100) + '%';
-  let sbS = document.getElementById('sbSocial'); if (sbS) sbS.textContent = Math.round((homeo.social_bond || 0) * 100) + '%';
-  let sbC = document.getElementById('sbCompetence'); if (sbC) sbC.textContent = Math.round((homeo.competence || 0) * 100) + '%';
-  let sbA = document.getElementById('sbAutonomy'); if (sbA) sbA.textContent = Math.round((homeo.autonomy || 0) * 100) + '%';
+  let sbE = document.getElementById('sbEnergy')||null; if (sbE) sbE.textContent = Math.round((homeo.energy || 0) * 100) + '%';
+  let sbS = document.getElementById('sbSocial')||null; if (sbS) sbS.textContent = Math.round((homeo.social_bond || 0) * 100) + '%';
+  let sbC = document.getElementById('sbCompetence')||null; if (sbC) sbC.textContent = Math.round((homeo.competence || 0) * 100) + '%';
+  let sbA = document.getElementById('sbAutonomy')||null; if (sbA) sbA.textContent = Math.round((homeo.autonomy || 0) * 100) + '%';
   // ── Pain oscillation chart ──
   if (typeof oscChartData === 'undefined') window.oscChartData = [];
   oscChartData.push(fp2);
   if (oscChartData.length > 60) oscChartData.shift();
   drawOscChart();
+  } catch(e) { console.error("[updateMainCards] FATAL:", e.message, e.stack); }
 }
 
 let oscChartData = [];
@@ -1515,6 +1532,7 @@ function switchRoom(room) {
 }
 
 function init() {
+  console.log("[init] START, gameState.painLevel="+gameState.painLevel);
   char.currentRoom='living';char.x=16;char.y=52;
   startActivity(0);
   initChart();
@@ -1523,7 +1541,7 @@ function init() {
   if (oscCvs) { oscCvs.width = oscCvs.parentElement.offsetWidth; oscCvs.height = oscCvs.parentElement.offsetHeight || 100; }
   setInterval(() => { tick++; updateChar(); drawScene(gameState.painLevel); }, 100);
   setInterval(fetchState, 3000);
-  fetchState();
+  setTimeout(fetchState, 200); // Delay slightly to ensure DOM is ready
 }
 window.addEventListener('load', init);
 </script>
