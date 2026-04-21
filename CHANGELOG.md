@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [6.3.2] - 2026-04-21
+
+### Fixed - JavaScript Syntax Error (Critical)
+- **Letter-suffix activity IDs**: `{id:1b}`, `{id:74b}`, `{id:75a}` etc. were **invalid JavaScript** — a number literal cannot be directly followed by letters. This caused the entire `<script>` block to fail parsing in `emotion_view.html`, resulting in blank canvas. Fixed by converting all letter-suffix IDs to valid integers (e.g. `1b→101`, `74b→141`, `75a→151`).
+- **Git push**: Verified SSH key (`id_ed25519`) works correctly for `git@github.com:Macau007/painmatrix.git` pushes.
+
+### Added - Living Room Enrichment
+- **Gaming table furniture**: New `gaming_table` collision box (x:35-47, y:46-52) with dark surface, optional game screen, and console visual that degrades with pain level
+- **8 sofa gaming variants**: Sitting on sofa gaming (激烈/悠閒/躺著玩手機/語音組隊/熬夜/吃零食/闖關/格鬥) — all `minPL:0,maxPL:0` for random selection
+- **8 roaming activities**: Living room patrol (巡視/蹦跳/來回走/繞圈/倒水/蹺腳/閒逛), each with random duration
+- **8 gaming table activities**: Sit at table gaming, stand watching, speedrun, rest, snack, lie and play, exhausted break, pain attack give up
+
+### Added - emotion_view_pixel.html
+- Standalone pixel character visualization (separate from the full 4-room `emotion_view.html`)
+- 820-line script, pixel character with 92 poses, synchronized to pain level
+
+### Added - emotion_log to API State
+- `painmatrix.py`: Added `emotion_log` field to `/api/state` response — `relieve_pain()` now appends emotion events so the pixel view can display emotion history
+
+### Updated - Documentation
+- README.md: Added bilingual Pixel Room Visualization section (English + Chinese)
+- README.md: Fixed version badge (6.3.2 → 6.3.1), fixed OpenClaw integration path
+- CHANGELOG.md: Updated with 6.3.2 entry
+
 ## [6.3.1] - 2026-04-20
 
 ### Fixed - PainGenerator Peak Duration Bug

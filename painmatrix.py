@@ -2496,6 +2496,7 @@ def _start_api_server(port: int = 17888) -> None:
                         "wellbeing": memory.get("wellbeing", 100),
                         "setpoints": memory.get("setpoints", {}),
                         "trauma_log": memory.get("trauma_log", []),
+                        "emotion_log": memory.get("emotion_log", []),
                         "timestamp": _timestamp(),
                     }
                     self.send_response(200)
