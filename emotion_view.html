@@ -281,7 +281,14 @@ const PAIN_INFO=[
 // ═══ 300 ACTIVITIES ═══
 const ACTIVITIES=[
   // SOFA
-  {id:1,name:'快樂打遊戲',icon:'🎮',room:'living',furniture:'sofa',pose:'game',minPL:0,maxPL:0,dur:300,x:10,y:42},
+  {id:1,name:'沙發上激烈遊戲',icon:'🎮',room:'living',furniture:'sofa',pose:'game',minPL:0,maxPL:0,dur:350,x:10,y:42},
+  {id:1b,name:'沙發上悠閒打遊戲',icon:'🎮',room:'living',furniture:'sofa',pose:'game',minPL:0,maxPL:0,dur:300,x:10,y:42},
+  {id:1c,name:'沙發上躺著玩手機遊戲',icon:'📱',room:'living',furniture:'sofa',pose:'game',minPL:0,maxPL:0,dur:280,x:10,y:42},
+  {id:1d,name:'沙發上組隊語音打遊戲',icon:'🎧',room:'living',furniture:'sofa',pose:'game',minPL:0,maxPL:0,dur:400,x:10,y:42},
+  {id:1e,name:'沙發上熬夜打遊戲',icon:'🌙',room:'living',furniture:'sofa',pose:'game',minPL:0,maxPL:0,dur:500,x:10,y:42},
+  {id:1f,name:'沙發上吃零食打遊戲',icon:'🍿',room:'living',furniture:'sofa',pose:'game',minPL:0,maxPL:0,dur:350,x:10,y:42},
+  {id:1g,name:'沙發上闖關遊戲',icon:'🏆',room:'living',furniture:'sofa',pose:'game',minPL:0,maxPL:0,dur:380,x:10,y:42},
+  {id:1h,name:'沙發上玩格鬥遊戲',icon:'👊',room:'living',furniture:'sofa',pose:'game',minPL:0,maxPL:0,dur:320,x:10,y:42},
   {id:2,name:'翹腳看漫畫',icon:'📖',room:'living',furniture:'sofa',pose:'sit',minPL:0,maxPL:0,dur:240,x:10,y:42},
   {id:3,name:'沙發上踢腿',icon:'⚽',room:'living',furniture:'sofa',pose:'kick',minPL:0,maxPL:0,dur:180,x:10,y:42},
   {id:4,name:'沙發上舉啞鈴',icon:'🏋️',room:'living',furniture:'sofa',pose:'stretch',minPL:0,maxPL:0,dur:160,x:10,y:42},
@@ -357,11 +364,28 @@ const ACTIVITIES=[
   {id:67,name:'扶桌喘氣',icon:'🥵',room:'living',furniture:'table',pose:'lean',minPL:2,maxPL:3,dur:200,x:57,y:51},
   {id:68,name:'桌邊蹲下',icon:'🧱',room:'living',furniture:'table',pose:'crouch',minPL:3,maxPL:4,dur:180,x:57,y:51},
   // LIVING GENERAL
-  {id:69,name:'客廳慢慢走巡視',icon:'🚶',room:'living',furniture:'any',pose:'walk',minPL:0,maxPL:0,dur:200,x:40,y:42},
-  {id:70,name:'客廳跑',icon:'🏃',room:'living',furniture:'any',pose:'walk',minPL:0,maxPL:0,dur:160,x:40,y:42},
+  // Walking / roaming in living room
+  {id:69,name:'客廳悠閒巡視',icon:'🚶',room:'living',furniture:'any',pose:'walk',minPL:0,maxPL:0,dur:200,x:40,y:42},
+  {id:70,name:'客廳到處蹦跳',icon:'🏃',room:'living',furniture:'any',pose:'walk',minPL:0,maxPL:0,dur:160,x:40,y:42},
   {id:71,name:'客廳伸懶腰',icon:'🧘',room:'living',furniture:'any',pose:'stretch',minPL:0,maxPL:0,dur:120,x:40,y:42},
-  {id:72,name:'客廳跳舞',icon:'💃',room:'living',furniture:'any',pose:'dance',minPL:0,maxPL:0,dur:200,x:40,y:42},
+  {id:72,name:'客廳開心跳舞',icon:'💃',room:'living',furniture:'any',pose:'dance',minPL:0,maxPL:0,dur:200,x:40,y:42},
   {id:73,name:'客廳走動舒緩',icon:'🚶',room:'living',furniture:'any',pose:'pacing',minPL:1,maxPL:2,dur:220,x:40,y:42},
+  {id:74b,name:'客廳沙發花園來回走',icon:'🚶',room:'living',furniture:'any',pose:'walk',minPL:0,maxPL:0,dur:250,x:40,y:42},
+  {id:74c,name:'客廳窗戶書架來回走',icon:'🚶',room:'living',furniture:'any',pose:'walk',minPL:0,maxPL:0,dur:220,x:40,y:42},
+  {id:74d,name:'客廳繞圈圈走',icon:'🔄',room:'living',furniture:'any',pose:'walk',minPL:0,maxPL:0,dur:300,x:40,y:42},
+  {id:74e,name:'客廳蹺腳休息走動',icon:'🚶',room:'living',furniture:'any',pose:'pacing',minPL:0,maxPL:1,dur:180,x:40,y:42},
+  {id:74f,name:'客廳起身倒水',icon:'🚶',room:'living',furniture:'any',pose:'walk',minPL:0,maxPL:0,dur:150,x:40,y:42},
+  {id:74g,name:'客廳開心蹦跳',icon:'🕺',room:'living',furniture:'any',pose:'kick',minPL:0,maxPL:0,dur:180,x:40,y:42},
+  {id:74h,name:'客廳無目標閒逛',icon:'🚶',room:'living',furniture:'any',pose:'pacing',minPL:0,maxPL:0,dur:280,x:40,y:42},
+  // Gaming table activities
+  {id:75a,name:'遊戲枱前坐下打遊戲',icon:'🎮',room:'living',furniture:'gaming_table',pose:'game',minPL:0,maxPL:0,dur:350,x:40,y:42},
+  {id:75b,name:'遊戲枱前站著看我玩',icon:'🎮',room:'living',furniture:'gaming_table',pose:'game',minPL:0,maxPL:0,dur:300,x:40,y:42},
+  {id:75c,name:'遊戲枱前快速闖關',icon:'🏆',room:'living',furniture:'gaming_table',pose:'game',minPL:0,maxPL:0,dur:380,x:40,y:42},
+  {id:75d,name:'遊戲枱前休息',icon:'💺',room:'living',furniture:'gaming_table',pose:'sit',minPL:0,maxPL:1,dur:200,x:40,y:42},
+  {id:75e,name:'遊戲枱前吃零食',icon:'🍿',room:'living',furniture:'gaming_table',pose:'eat',minPL:0,maxPL:0,dur:220,x:40,y:42},
+  {id:75f,name:'遊戲枱前躺著玩',icon:'🛋️',room:'living',furniture:'gaming_table',pose:'game',minPL:0,maxPL:0,dur:350,x:40,y:42},
+  {id:75g,name:'遊戲枱前累了休息',icon:'😴',room:'living',furniture:'gaming_table',pose:'sit',minPL:1,maxPL:2,dur:280,x:40,y:42},
+  {id:75h,name:'遊戲枱前疼痛發作放棄',icon:'😣',room:'living',furniture:'gaming_table',pose:'grip_sheet',minPL:3,maxPL:5,dur:200,x:40,y:42},
   {id:74,name:'客廳扶牆走',icon:'🧱',room:'living',furniture:'any',pose:'limp',minPL:2,maxPL:3,dur:200,x:40,y:42},
   {id:75,name:'客廳角落蹲',icon:'🧱',room:'living',furniture:'any',pose:'crouch',minPL:3,maxPL:4,dur:250,x:40,y:42},
   {id:76,name:'客廳地上翻滾',icon:'🌪️',room:'living',furniture:'any',pose:'roll',minPL:4,maxPL:5,dur:350,x:40,y:42},
@@ -633,6 +657,7 @@ const FURNITURE_BOXES={
   tv_unit:  {room:'living',  x:72,y:6,  w:14, h:12},
   bookshelf:{room:'living',  x:2, y:20, w:8,  h:18},
   coffee_table:{room:'living',x:54,y:49, w:10, h:6},
+  gaming_table:{room:'living',x:35,y:46, w:12, h:6},
   plant:    {room:'living',  x:69,y:44, w:6,  h:6},
   lamp:     {room:'living',  x:1, y:42, w:4,  h:12},
   rug:      {room:'living',  x:7, y:49, w:20, h:5},
@@ -729,6 +754,10 @@ function drawLivingRoom(pl){
   pxRect(1,42,3,12,'#666');pxRect(1,41,4,1,lampC==='#000'?'#333':lampC);
   if(lampC!=='#000'&&lampC!=='#221100'&&pl<=2){ctx.fillStyle=lampC;ctx.globalAlpha=0.12;ctx.fillRect(0*PX,36*PX,7*PX,8*PX);ctx.globalAlpha=1;}
   pxRect(54,49,10,6,'#6b4423');pxRect(54,49,10,1,'#8b6443');
+  // Gaming console table
+  pxRect(35,46,12,6,'#444455');pxRect(35,46,12,1,'#666677');
+  if(pl<=1){pxRect(36,44,6,3,'#333');pxRect(36,44,6,1,'#4a4a6a');pxRect(43,44,2,3,'#222233');pxRect(37,45,1,1,'#00ff88');}
+  else if(pl>=4){pxRect(36,45,6,2,'#1a1a2a');}
   if(pl===0){pxRect(30,50,5,3,'#cc3333');pxRect(30,50,5,1,'#ee4444');}else if(pl===1){pxRect(30,50,5,3,'#883333');}
   if(pl>=3){pxRect(10,2,1,6,C.crack);pxRect(11,4,1,4,C.crack);}
   if(pl>=4){pxRect(60,1,1,7,C.crack);pxRect(62,2,1,5,C.crack);pxRect(20,0,1,4,C.crack);}
