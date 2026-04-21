@@ -1089,13 +1089,7 @@ function updateMainCards(d){
   let traumas=d.trauma_memories||[],tEl=document.getElementById('traumaList');
   if(tEl){
     if(!traumas.length){tEl.innerHTML='<div class="empty-state">尚無創傷記錄</div>';}
-    else{tEl.innerHTML=traumas.slice(-8).reverse().map(t=>`<div
-    grid.innerHTML = html;
-  }
-  let traumas = d.trauma_memories || [], tEl = document.getElementById('traumaList');
-  if (tEl) {
-    if (!traumas.length) { tEl.innerHTML = '<div class="empty-state">尚無創傷記錄</div>'; }
-    else { tEl.innerHTML = traumas.slice(-8).reverse().map(t => '<div class="trauma-item"><div class="t-date">' + (t.timestamp || '') + '</div><div class="t-event">' + (t.event || '') + '</div><div class="t-strength">強度: ' + (t.strength || 0).toFixed(2) + '</div></div>').join(''); }
+    else{tEl.innerHTML=traumas.slice(-8).reverse().map(t=>'<div class="trauma-item"><div class="t-date">'+(t.timestamp||'')+'</div><div class="t-event">'+(t.event||'')+'</div><div class="t-strength">強度: '+(t.strength||0).toFixed(2)+'</div></div>').join('');}
   }
   let ev = d.evolution || {};
   let gEl = document.getElementById('evoGrowth'), rEl = document.getElementById('evoResilience'), sEl = document.getElementById('evoSensitivity');
