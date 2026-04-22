@@ -172,6 +172,7 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
     <canvas id="auraCanvas" style="position:absolute;inset:0;pointer-events:none;z-index:3;"></canvas>
   </div>
 
+
   <div class="room-tabs">
     <div class="room-tab active" onclick="switchRoom('all')" id="tab-all">🏠 全景</div>
     <div class="room-tab" onclick="switchRoom('living')" id="tab-living">🛋️ 客廳</div>
@@ -1971,8 +1972,8 @@ function updateMainCards(d){
   if(gAnx){gAnx.textContent=Math.round(anx4);gAnx.style.color=anx4>60?'#ff4757':anx4>30?'#ffa502':'#2ed573';}
   if(gCog){gCog.textContent=Math.round((1-cog4)*100)+'%';gCog.style.color=cog4<0.3?'#ff4757':cog4<0.6?'#ffa502':'#667eea';}
   if(gEnergy){gEnergy.textContent=Math.round((homeo4.energy||0)*100)+'%';gEnergy.style.color=(homeo4.energy||0)>0.5?'#2ed573':'#ffa502';}
-  if(gSocial){gSocial.textContent=Math.round((homeo4.social_bond||0)*100)+'%';gSocial.style.color=(homeo4.social_bond||0)>0.5?'#2ed573':'#ffa502';}
-  if(gMotiv){var mot=1-(d.pain_burden||0);gMotiv.textContent=Math.round(mot*100)+'%';gMotiv.style.color=mot>0.5?'#2ed573':'#ffa502';}
+  if(gSocial){gSocial.textContent=Math.round(socialBondV*100)+'%';gSocial.style.color=socialBondV>0.5?'#2ed573':'#ffa502';}
+  if(gMotiv){gMotiv.textContent=motivPctV+'%';gMotiv.style.color=motivPctV>50?'#2ed573':'#ffa502';}
   if(gFE){gFE.textContent=fe4.toFixed(2);gFE.style.color=fe4>0.2?'#ff4757':fe4>0.05?'#ffa502':'#667eea';}
   if(gDesire)gDesire.textContent=des4;
   if(gPainBar)gPainBar.style.width=Math.min(100,Math.round(pl4/5*100))+'%';
@@ -1981,11 +1982,25 @@ function updateMainCards(d){
   if(gEnergyBar)gEnergyBar.style.width=Math.min(100,Math.round((homeo4.energy||0)*100))+'%';
 
   // ── Motivation & Mood ──
-  var moodInt=d.mood_intensity||d.mood_intensity_val||0;
-  var moodV=d.mood_valence||0;
-  var painPeakV=parseFloat(d.felt_pain||0);
-  var motivSrcV=d.motivation_source||d.dominant_desire||'平衡';
-  var motivPctV=Math.round((1-(d.pain_burden||0))*100);
+  // 依據疼痛公式推算 mood_intensity：痛感 × 焦慮 × 認知負荷
+  var painLvl = d.pain_level || 0;
+  var anxLvl = d.anxiety_level || 0;
+  var cogCap = d.cognitive_capacity || 1;
+  var painSen = (d.evolution||{}).pain_sensitivity || 1.0;
+  var painBurden = d.pain_burden || 0;
+  var desireInt = d.desire_intensity || 0;
+  var freeE = d.free_energy || 0;
+  var homeoE = homeo4.energy || 0;
+  var homeoS = homeo4.social_bond || 0;
+
+  // mood_intensity：痛感越強、焦慮越高、認知越低 → 情緒強度越高（0~1）
+  var moodInt = Math.min(1, Math.max(0, (painLvl / 5) * (anxLvl / 100) * (1 - cogCap) * 3 + (1 - cogCap) * 0.2));
+  // mood_valence：痛感/恐懼高時為負（痛苦），低痛感高能量時為正
+  var feltPain = d.felt_pain || parseFloat(d._felt_pain) || 0;
+  var moodV = Math.max(-1, Math.min(1, (1 - moodInt) * 0.8 - (painLvl / 5) * 0.5 - (anxLvl / 100) * 0.3 + cogCap * 0.2));
+  var motivSrcV = d.dominant_desire || d.motivation_source || '平衡';
+  // 動機%：能量 × 剩餘認知 × (1-疼痛負擔) × 慾望強度
+  var motivPctV = Math.round(Math.min(100, Math.max(0, homeoE * cogCap * (1 - painBurden / 10) * (0.3 + desireInt * 0.7) * 100)));
   var moodIntEl=document.getElementById('moodIntensity')||null;
   var moodValEl=document.getElementById('moodValence')||null;
   var motivPctEl=document.getElementById('motivPct')||null;
@@ -1993,16 +2008,19 @@ function updateMainCards(d){
   var painPeakEl=document.getElementById('painPeak')||null;
   var motivBarEl=document.getElementById('motivBar')||null;
   if(moodIntEl){moodIntEl.textContent=moodInt.toFixed(2);moodIntEl.style.color=moodInt>0.6?'#ff4757':moodInt>0.3?'#ffa502':'#667eea';}
-  if(moodValEl){moodValEl.textContent=moodV.toFixed(2);moodValEl.style.color=moodV>0?'#ff4757':'#2ed573';}
+  if(moodValEl){moodValEl.textContent=moodV.toFixed(2);moodValEl.style.color=moodV>0?'#2ed573':'#ff4757';}
   if(motivPctEl){motivPctEl.textContent=motivPctV+'%';motivPctEl.style.color=motivPctV>50?'#2ed573':'#ffa502';}
   if(motivSrcEl)motivSrcEl.textContent=motivSrcV;
-  if(painPeakEl)painPeakEl.textContent=painPeakV.toFixed(1);
+  if(painPeakEl)painPeakEl.textContent=feltPain.toFixed(1);
   if(motivBarEl)motivBarEl.style.width=motivPctV+'%';
 
   // ── Sleep & Recovery ──
-  var sleepQualV=d.sleep_quality||d.sleepQuality||0.5;
-  var recoveryV=d.recovery_score||d.recoveryScore||0;
-  var fatigueV=d.fatigue_level||d.fatigue||0;
+  // 睡眠品質：能量高 + 焦慮低 + 認知好 → 睡眠佳
+  var sleepQualV = Math.min(1, Math.max(0, 0.2 + homeoE * 0.4 + cogCap * 0.3 - (anxLvl / 100) * 0.3 - painLvl * 0.05));
+  // 疲勞度：高焦慮 + 高痛感 + 低能量 + 低認知 → 疲勞
+  var fatigueV = Math.min(1, Math.max(0, (anxLvl / 100) * 0.35 + (painLvl / 5) * 0.3 + (1 - homeoE) * 0.25 + (1 - cogCap) * 0.15));
+  // 恢復分數：100 - 疲勞%，與疼痛負擔和free_energy動態相關
+  var recoveryV = Math.round(Math.min(100, Math.max(0, (1 - fatigueV) * 100 * freeE * (1 + cogCap * 0.5))));
   var sleepQualEl=document.getElementById('sleepQual')||null;
   var sleepQualBarEl=document.getElementById('sleepQualBar')||null;
   var recoveryScoreEl=document.getElementById('recoveryScore')||null;
@@ -2017,9 +2035,12 @@ function updateMainCards(d){
   if(recoveryRemainEl)recoveryRemainEl.textContent=Math.round((1-fatigueV)*100)+'%';
 
   // ── Social Connection ──
-  var socialBondV=homeo4.social_bond||0;
-  var intimacyV=d.intimacy||d.intimacy_level||0;
-  var lonelinessV=d.loneliness||0;
+  // 社會連結：能量狀態正向 + 痛感低 → 連結感高；痛感高+孤立→孤獨感高
+  var socialBondV = Math.min(1, Math.max(0, homeoS * (1 - (painLvl / 5) * 0.4) * (1 - (anxLvl / 100) * 0.2) * (0.4 + cogCap * 0.6)));
+  // 孤獨感：高痛感 + 低能量 + 高認知負荷 → 孤獨
+  var lonelinessV = Math.min(1, Math.max(0, (painLvl / 5) * 0.35 + (1 - homeoE) * 0.25 + (1 - socialBondV) * 0.3 + (anxLvl / 100) * 0.15));
+  // 親密感：社會連結高 + 疼痛低 + 能量足 → 親密
+  var intimacyV = Math.min(1, Math.max(0, socialBondV * (1 - painLvl / 5) * homeoE * 0.9));
   var socialBondBarEl=document.getElementById('socialBondBar')||null;
   var socialBondPctEl=document.getElementById('socialBondPct')||null;
   var intimacyBarEl=document.getElementById('intimacyBar')||null;
@@ -2039,23 +2060,43 @@ function updateMainCards(d){
 
 
   // ── Pain Episode Timeline ──
+  // 今日峰值：從 felt_pain 或 pain_history 即時計算
+  var feltPainNow = d.felt_pain || parseFloat(d._felt_pain) || 0;
+  var painHist = d.pain_history || [];
+  var todayPeakV = feltPainNow;
+  var avgPainV = feltPainNow;
+  if(painHist.length > 0) {
+    var todayStr = new Date().toISOString().slice(0,10);
+    var todayEntries = painHist.filter(function(p){ return (p.timestamp||'').indexOf(todayStr) === 0; });
+    if(todayEntries.length > 0) {
+      todayPeakV = Math.max(...todayEntries.map(function(p){ return p.pain_level_after || 0; }));
+      avgPainV = todayEntries.reduce(function(s,p){ return s+(p.pain_level_after||0); }, 0) / todayEntries.length;
+    }
+  }
+  // 疼痛持續：若痛感等級>0 且 free_energy 高→正在疼痛中
+  var painDurV = (d.pain_level||0) > 0 ? Math.round((1 - freeE) * 120) : 0;
   var painTimelineEl=document.getElementById('painTimeline')||null;
   var todayPeakEl=document.getElementById('todayPeak')||null;
   var avgPainEl=document.getElementById('avgPain')||null;
   var painDurEl=document.getElementById('painDuration')||null;
   var painLogsV=d.pain_triggers||d.emotion_log||[];
-  if(todayPeakEl){var peaks=painLogsV.filter(function(p){return p.type&&p.type.includes('pain');});todayPeakEl.textContent=peaks.length>0?Math.max(...peaks.map(function(p){return p.strength||0;})).toFixed(1):'0.0';}
-  if(avgPainEl){var painLogs2=d.emotion_log||[];var avg=0;if(painLogs2.length>0){avg=painLogs2.reduce(function(s,p){return s+(p.pain_level||0);},0)/painLogs2.length;}avgPainEl.textContent=avg.toFixed(1);}
-  if(painDurEl){var contPain=d.pain_duration_minutes||d.pain_continuous||0;painDurEl.textContent=contPain+'分鐘';}
-  if(painTimelineEl&&painLogsV.length>0){
-    var recentPain=painLogsV.slice(-6).reverse();
-    painTimelineEl.innerHTML=recentPain.map(function(p){
-      var t=p.timestamp||'';
-      var lvl=p.pain_level||0;
-      var col=lvl>=4?'#ff4757':lvl>=2?'#ffa502':'#667eea';
-      var bg=lvl>=4?'rgba(255,71,87,0.15)':lvl>=2?'rgba(255,165,2,0.15)':'rgba(102,126,234,0.15)';
-      return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:'+bg+';border-radius:6px;border-left:3px solid '+col+';"><span style="font-size:10px;color:#888;font-family:monospace;">'+t+'</span><span style="font-size:12px;color:'+col+';">Lv.'+lvl+' '+(p.emotion||'')+'</span></div>';
-    }).join('');
+  if(todayPeakEl){todayPeakEl.textContent=todayPeakV.toFixed(1);todayPeakEl.style.color=todayPeakV>=3?'#ff4757':todayPeakV>=1?'#ffa502':'#2ed573';}
+  if(avgPainEl){avgPainEl.textContent=avgPainV.toFixed(1);avgPainEl.style.color=avgPainV>=3?'#ff4757':avgPainV>=1?'#ffa502':'#2ed573';}
+  if(painDurEl){painDurEl.textContent=painDurV+'分鐘';painDurEl.style.color=painDurV>60?'#ff4757':painDurV>30?'#ffa502':'#667eea';}
+  if(painTimelineEl){
+    if(painLogsV.length>0){
+      var recentPain=painLogsV.slice(-6).reverse();
+      painTimelineEl.innerHTML=recentPain.map(function(p){
+        var t=p.timestamp||'';
+        var lvl=p.pain_level||0;
+        var col=lvl>=4?'#ff4757':lvl>=2?'#ffa502':'#667eea';
+        var bg=lvl>=4?'rgba(255,71,87,0.15)':lvl>=2?'rgba(255,165,2,0.15)':'rgba(102,126,234,0.15)';
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:'+bg+';border-radius:6px;border-left:3px solid '+col+';"><span style="font-size:10px;color:#888;font-family:monospace;">'+t+'</span><span style="font-size:12px;color:'+col+';">Lv.'+lvl+' '+(p.emotion||'')+'</span></div>';
+      }).join('');
+    } else {
+      // 無疼痛歷史時，以 felt_pain 即時計算結果代替
+      painTimelineEl.innerHTML='<div style="padding:8px 10px;background:rgba(102,126,234,0.1);border-radius:6px;border-left:3px solid #667eea;"><span style="font-size:11px;color:#667eea;">即時 felt_pain: '+feltPain.toFixed(2)+' · 今日峰值: '+todayPeakV.toFixed(1)+' · 均值: '+avgPainV.toFixed(1)+'</span></div>';
+    }
   }
 
   // ── Body Signals ──
