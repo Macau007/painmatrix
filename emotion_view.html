@@ -161,7 +161,7 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 </style>
 </head>
 <body>
-<div class="__diag" id="__diag" style="position:fixed;top:0;left:0;right:0;background:#111;color:#0f0;padding:6px 12px;font-size:14px;z-index:9999;font-family:monospace;display:none;">[PAGE LOADED]</div>
+<div class="__diag" id="__diag" style="position:fixed;top:0;left:0;right:0;background:#111;color:#0f0;padding:6px 12px;font-size:14px;z-index:9999;font-family:monospace;display:block;">[PAGE LOADED]</div>
 <div class="container">
 
   <!-- ═══ PIXEL WORLD CANVAS ═══ -->
@@ -181,7 +181,8 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
     <div class="room-tab" onclick="switchRoom('bed')" id="tab-bed">🛏️ 臥室</div>
   </div>
 
-  <div class="status-row">
+  <div style="height:5px;background:#ff0000;position:relative;z-index:999;" id="mark_top"></div>
+  <div class="status-row" style="background:#330000;">
     <div class="status-box"><div class="status-label">痛感等級</div><div class="status-val red" id="painNum">0</div></div>
     <div class="status-box"><div class="status-label">felt_pain</div><div class="status-val orange" id="feltNum">0.0</div></div>
     <div class="status-box"><div class="status-label">情緒</div><div class="status-val green" id="emotionText">平靜</div></div>
@@ -1636,9 +1637,10 @@ function updateUI(){
   let actText=ad?ad.name:(char.isMoving?'走動中…':'待機');
   let actIcon=ad?ad.icon:(char.isMoving?'🚶':'💭');
   document.getElementById('activityText').textContent=actText;
-  document.getElementById('activityIcon').textContent=actIcon;
-  document.getElementById('activityName').textContent=ad?ad.name:'待機';
-  document.getElementById('activityTag').textContent=ad?(ad.name.substring(0,18)+'…'):'';
+  let elAI=document.getElementById('activityIcon'),elAN=document.getElementById('activityName'),elAT=document.getElementById('activityTag');
+  if(elAI)elAI.textContent=actIcon;
+  if(elAN)elAN.textContent=ad?ad.name:'待機';
+  if(elAT)elAT.textContent=ad?(ad.name.substring(0,18)+'…'):'';
   document.getElementById('roomLabel').textContent={living:'🛋️ 客廳',kitchen:'🍳 廚房',bath:'🚽 浴室',bed:'🛏️ 臥室'}[char.currentRoom]||'🏠 像素小人生活';
   var painOv = document.getElementById('painOverlay')||null;
   if(painOv){var pi=PAIN_INFO[Math.min(gameState.painLevel,5)];if(pi)painOv.style.background=pi.overlay;}
