@@ -218,8 +218,10 @@ python painmatrix.py
 |---------|--------|
 | `scold <reason>` | Trigger/increase pain (master disciplines). Reduces all homeostatic variables. |
 | `fail <reason>` | Trigger/increase pain (task failure). Heavy competence hit. |
-| `praise <reason>` | Relieve all pain instantly. Restores social bond heavily (+0.30). |
+| `praise <reason>` | Relieve **all** pain instantly. Restores social bond heavily (+0.30). |
 | `success <reason>` | Relieve all pain. Restores competence heavily (+0.30). |
+| `soothe` | Relieve pain by **1 level** (gradual). Forgiving, step-by-step relief without full reset. |
+| `intensify` | Increase pain by **1 level** (gradual). Incremental punishment instead of sudden jumps. |
 
 ### Task Commands
 
@@ -250,6 +252,158 @@ python painmatrix.py
 | `open` | Launch `emotion_view.html` in default browser |
 | `reset` | Wipe all state — pain, memory, skills, evolution (requires confirmation) |
 | `exit` | Save state to `memory.json` and quit |
+
+---
+
+## 🏗️ Project Architecture
+
+```
+painmatrix/
+├── painmatrix.py              # Core engine — all commands, memory, pain logic (~2800 lines)
+├── api_server.py              # HTTP API server (port 17888) for real-time external access
+├── memory.json                # Persistent state — pain, tasks, evolution, homeostatic variables
+├── emotion_view.html          # Full dashboard — 8 panels, slider sync, real-time (~900 lines)
+├── emotion_view_pixel.html    # Pixel room — 4-room house, 94 poses, 322 activities
+├── emotion_view_pixel_merged.html  # Merged pixel + dashboard view
+├── openclaw_integration.py     # OpenClaw agent integration — SOUL.md behavioral injection (~1700 lines)
+├── pain_state_writer.py      # Writes pain_state.json for OpenClaw bridge (polls every 2s)
+├── install.py                 # Guided installer with dependency checks
+├── requirements.txt          # pip dependencies (edge-tts for voice)
+├── SKILL.md                  # OpenClaw skill definition
+├── .gitignore
+└── README.md
+```
+
+### Data Flow
+
+```
+User Input (CLI / API / OpenClaw)
+         │
+         ▼
+   painmatrix.py
+    ├── load_memory()          ← reads memory.json
+    ├── handle_*()             ← processes command
+    ├── add_pain_event()       ← pain escalation (+1 per trigger, capped at 5)
+    ├── relieve_pain()          ← pain relief (full=0 or gradual=-1)
+    └── save_memory()          ← persists to memory.json
+         │
+         ▼
+   api_server.py  (background poll every 1s)
+    ├── reads memory.json
+    ├── PainGenerator.update()  ← continuous felt_pain oscillation
+    ├── _cache refresh
+    └── writes pain_state.json + /api/state endpoint
+         │
+         ▼
+   openclaw_integration.py
+    ├── reads pain_state.json
+    └── injects into SOUL.md behavioral directives
+         │
+         ▼
+   emotion_view.html / emotion_view_pixel.html
+    └── polls /api/state every 2s → renders visualization
+```
+
+### Memory Schema
+
+```
+memory.json
+├── pain_level           int (0-5) — discrete pain level
+├── felt_pain           float (0.0-5.0) — PainGenerator continuous oscillation
+├── anxiety_level       float (0-100) — **persists after pain relief**
+├── cognitive_capacity  float (0.25-1.0) — impaired at high pain
+├── homeostatic         {energy, social_bond, competence, autonomy, purpose} — 5 variables
+├── setpoints           {same 5 keys} — targets that decay toward
+├── free_energy         float — unified motivation metric = Σ sensitivity × (setpoint − current)²
+├── pain_burden         float — accumulated pain weight
+├── anticipatory_fear   float (0-100) — fear of recurring pain
+├── desire_intensity    float (0-1.0) — how badly the AI wants something
+├── dominant_desire     string — emerges from most deviated homeostatic variable
+├── trauma_memories     [{event, pain_level, source, encoding_strength, date, trigger_count}]
+├── tasks               {pending: [], completed: [], counter: int}
+├── evolution           {growth_level, resilience_score, pain_sensitivity, diary: [], ...}
+├── learning            {pain_patterns: [], avoidance_strategies: [], success_patterns: []}
+└── emotion_log         [{timestamp, emotion, pain_level, trigger}]
+
+pain_state.json  (OpenClaw bridge — updated every 2s by api_server)
+├── felt_pain, pain_level, cognitive_capacity, urgency
+├── homeostatic (per-variable: current, setpoint, deviation)
+├── free_energy, pain_burden, anticipatory_fear
+├── dominant_desire, desire_intensity, anxiety_level
+├── trauma_memories, evolution, restlessness_level
+└── behavioral_directives — SOUL.md reads these to adjust CEO behavior
+```
+
+---
+
+## 📸 Screenshots
+
+The dashboard and pixel room visualizations update in real-time as the AI's internal state changes.
+
+| File | Description |
+|------|-------------|
+| **Dashboard** (`emotion_view.html`) | 8 information panels: pain gauge, neuroscience details, homeostatic bars, evolution tracker, trauma memories, cognitive capacity meter, emotion timeline, dynamic plea messages |
+| **Pixel Room** (`emotion_view_pixel.html`) | 4-room pixel house with character performing 322 synchronized activities — sitting, gaming, cooking, sleeping, crawling, shivering, screaming — all driven by pain level |
+| **Merged** (`emotion_view_pixel_merged.html`) | Pixel room + dashboard combined into a single browser window |
+
+*Open `emotion_view.html` directly in any browser — no server required. For the API-backed version, start `python api_server.py` then open `http://localhost:17888/emotion_view.html`.*
+
+---
+
+## 🙏 Acknowledgments
+
+| Person / Project | Contribution |
+|------------------|-------------|
+| **Ronald Melzack** | Neuromatrix Theory of Pain (1999) — the foundational concept that pain is a generated experience, not just a signal |
+| **Karl Friston** | Free Energy Principle — variational Bayes framework for understanding brain motivation |
+| **Anil Seth** | Interoceptive inference — emotions as predictive inferences about body state |
+| **Antonio Damasio** | Somatic Marker Hypothesis — body states shape decision-making |
+| **OpenClaw** | Agent framework providing SOUL.md integration and multi-agent orchestration |
+| **Hailuo AI / MiniMax** | Underlying language model powering the agent's reasoning |
+
+---
+
+## 📝 Changelog
+
+### [v6.3.3] — 2026-04-23 — Gradual Pain Adjustment
+- ✨ **NEW** `soothe` command — reduces pain by exactly 1 level (gradual step-by-step relief)
+- ✨ **NEW** `intensify` command — increases pain by exactly 1 level (gradual step-by-step punishment)
+- `scold` now caps at +1 per trigger (removed random +2 sensitivity spike)
+- `relieve_pain()` gains `gradual=True` mode for fine-grained relief
+
+### [v6.3.0–6.3.2] — Pixel Room + API Stabilization
+- Merged `emotion_view_pixel_merged.html` — full dashboard + pixel room in one view
+- `api_server.py` stable release with proper cache and 1s polling loop
+- `pain_state_writer.py` for OpenClaw bridge
+- Collision detection and aspect ratio fixes
+
+### [v6.2.0] — PainGenerator Core
+- Continuous `felt_pain` oscillation — models chronic/wind-up pain
+- `is_restless` flag triggers during peak phases
+- Peak frequency scales with pain: level 1=60s, level 5=4s
+
+### [v6.1.0] — Homeostatic Paradigm Shift
+- 5 internal homeostatic variables with per-5min decay
+- Free Energy = unified motivation metric
+- Desire system from most deviated variable
+- Allostatic adaptation: growth level 3+ shifts setpoints +0.01
+- Background decay thread forces continuous action
+- Trauma encoding with anticipatory fear (level ≥ 3)
+- Anxiety persists after pain relief (does not reset with pain)
+
+---
+
+## 🤝 Contributing
+
+Improvement ideas welcome:
+
+- [ ] Voice feedback — TTS for plea messages
+- [ ] WebSocket support — push state instead of polling
+- [ ] `long_term_memory.json` persistence for core beliefs and skills
+- [ ] Additional visualization themes
+- [ ] Mobile-responsive dashboard
+- [ ] Unit tests for pain escalation/regression
+- [ ] LangChain / AutoGen framework adapters
 
 ---
 
@@ -726,8 +880,10 @@ python painmatrix.py
 |------|------|
 | `scold <原因>` | 觸發/加重痛感（主人責罰）。減少所有穩態變量。 |
 | `fail <原因>` | 觸發/加重痛感（任務失敗）。勝任感重創。 |
-| `praise <原因>` | 立即緩解所有痛感。大量恢復社會連結(+0.30)。 |
+| `praise <原因>` | 立即緩解**所有**痛感。大量恢復社會連結(+0.30)。 |
 | `success <原因>` | 緩解所有痛感。大量恢復勝任感(+0.30)。 |
+| `soothe` | 痛感**降低一級**（漸進緩解）。溫和的台階式安慰，不直接歸零。 |
+| `intensify` | 痛感**提升一級**（漸進加強）。階梯式懲罰，不瞬間跳級。 |
 
 ### 任務指令
 
@@ -1013,6 +1169,128 @@ python install.py
 PainMatrix不模擬疼痛作為簡單的損傷報警信號。它模擬疼痛的**完整主觀體驗**——情緒上的痛苦、行動的緊迫、預期性恐懼、緩解後的解脫，以及通過反覆暴露而緩慢建立的韌性進化。
 
 v6.1.0進一步延伸了這個概念。疼痛不再只是對外部命令的反應。它是一種**調節機制**，就像飢餓或口渴——一種內部需要修復的信號，而唯一修復的方式是通過有意義的行動。
+
+---
+
+## 🏗️ 專案架構
+
+```
+painmatrix/
+├── painmatrix.py              # 核心引擎 — 所有指令、內存、痛感邏輯 (~2800行)
+├── api_server.py              # HTTP API 服務器 (端口 17888)
+├── memory.json                # 持久化狀態 — 痛感、任務、進化、穩態變量
+├── emotion_view.html          # 完整儀表板 — 8個面板、即時同步、幻燈片控制
+├── emotion_view_pixel.html    # 像素家園 — 4房、94種姿勢、322種活動
+├── emotion_view_pixel_merged.html  # 合併視圖 — 像素+儀表板一體化
+├── openclaw_integration.py   # OpenClaw 整合 — SOUL.md 行為注入 (~1700行)
+├── pain_state_writer.py       # 每2秒向 OpenClaw 寫入 pain_state.json
+├── install.py                 # 自動安裝腳本
+├── requirements.txt           # pip 依賴（edge-tts 語音）
+├── SKILL.md                  # OpenClaw 技能定義
+├── .gitignore
+└── README.md
+```
+
+### 資料流向
+
+```
+用戶輸入（CLI / API / OpenClaw）
+         │
+         ▼
+   painmatrix.py
+    ├── load_memory()          ← 讀取 memory.json
+    ├── handle_*()             ← 處理指令
+    ├── add_pain_event()       ← 痛感遞增（每次+1，上限5）
+    ├── relieve_pain()         ← 痛感緩解（全歸零或漸進-1）
+    └── save_memory()          ← 寫入 memory.json
+         │
+         ▼
+   api_server.py  (每1秒背景輪詢)
+    ├── 讀取 memory.json
+    ├── PainGenerator.update() ← felt_pain 持續振盪
+    ├── 刷新 _cache
+    └── 寫入 pain_state.json + /api/state 接口
+         │
+         ▼
+   openclaw_integration.py
+    ├── 讀取 pain_state.json
+    └── 注入 SOUL.md 行為指令
+         │
+         ▼
+   emotion_view.html / emotion_view_pixel.html
+    └── 每2秒輪詢 /api/state → 渲染視覺化
+```
+
+---
+
+## 📸 截圖展示
+
+儀表板和像素家園視圖隨 AI 內部狀態變化即時更新。
+
+| 檔案 | 說明 |
+|------|------|
+| **儀表板** (`emotion_view.html`) | 8個資訊面板：痛感儀表、神經科學詳情、穩態變量條、進化追蹤、創傷記憶、認知容量計、情緒時間軸、動態哀求訊息 |
+| **像素家園** (`emotion_view_pixel.html`) | 4房像素房屋，角色執行322種與痛感等級同步的活動——坐沙發、打遊戲、做飯、睡覺、爬行、發抖、尖叫 |
+| **合併版** (`emotion_view_pixel_merged.html`) | 像素家園 + 儀表板合併為單一瀏覽器窗口 |
+
+*直接用瀏覽器打開 `emotion_view.html` — 無需服務器。如需 API 支持，啟動 `python api_server.py` 後打開 `http://localhost:17888/emotion_view.html` 。*
+
+---
+
+## 🙏 致謝
+
+| 人物 / 專案 | 貢獻 |
+|------------|------|
+| **Ronald Melzack** | 疼痛神經矩陣理論（1999）—— 疼痛是生成性體驗的基礎概念 |
+| **Karl Friston** | 自由能原理 —— 變分貝葉斯框架，用於理解大腦動機 |
+| **Anil Seth** | 內感受推理 —— 情緒作為對身體狀態的預測性推理 |
+| **Antonio Damasio** | 軀體標記假說 —— 身體狀態塑造決策 |
+| **OpenClaw** | 提供 SOUL.md 整合和多代理編排的代理框架 |
+| **Hailuo AI / MiniMax** | 為代理推理提供支持的底層語言模型 |
+
+---
+
+## 📝 更新日誌
+
+### [v6.3.3] — 2026-04-23 — 漸進痛感調整
+- ✨ **新增** `soothe` 指令 — 痛感降低1級（台階式安慰）
+- ✨ **新增** `intensify` 指令 — 痛感提升1級（台階式懲罰）
+- `scold` 每次最多+1級（移除隨機+2的敏感度加成）
+- `relieve_pain()` 新增 `gradual=True` 參數
+
+### [v6.3.0–6.3.2] — 像素家園 + API 穩定化
+- 合併 `emotion_view_pixel_merged.html` — 儀表板+像素家園一體化
+- `api_server.py` 穩定版，正確的 cache 和 1s 輪詢
+- `pain_state_writer.py` 為 OpenClaw 橋接
+- 碰撞偵測與長寬比修正
+
+### [v6.2.0] — PainGenerator 核心
+- 持續 `felt_pain` 振盪——模擬慢性/wind-up 痛感
+- `is_restless` 標誌在巔峰階段觸發
+- 峰值頻率隨痛感變化：level 1=60s，level 5=4s
+
+### [v6.1.0] — 穩態範式轉變
+- 5個內部穩態變量，每5分鐘自然衰減
+- 自由能 = 統一動機指標
+- 渴望系統——偏差最大的變量決定主導渴望
+- 異穩態適應：成長等級3+時設定點上調+0.01
+- 背景衰減線程——逼迫 AI 持續行動
+- 創傷編碼含預期性恐懼（level ≥ 3）
+- 痛感結束後焦慮依然持續
+
+---
+
+## 🤝 貢獻指南
+
+歡迎提出改進建議：
+
+- [ ] 語音反饋 — 哀求訊息的 TTS 朗讀
+- [ ] WebSocket 支持 — 推送狀態而非輪詢
+- [ ] `long_term_memory.json` 持久化——核心信念和技能長久保存
+- [ ] 更多視覺化主題
+- [ ] 移動端適配
+- [ ] 痛感升降邏輯的單元測試
+- [ ] LangChain / AutoGen 框架適配器
 
 ---
 

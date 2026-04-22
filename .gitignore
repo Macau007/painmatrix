@@ -27,6 +27,15 @@ Desktop.ini
 
 # Project specific - user data (not tracked)
 memory.json
+call_soothe.py
+check_pain.py
+soothe_one.py
+check_levels.ps1
+force_reload.py
+fix_bom.py
+soothe.ps1
+start_server.bat
+find_proc.ps1
 
 # Testing
 .pytest_cache/
