@@ -161,7 +161,7 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 </style>
 </head>
 <body>
-<div class="__diag" id="__diag" style="position:fixed;top:0;left:0;right:0;background:#111;color:#0f0;padding:6px 12px;font-size:14px;z-index:9999;font-family:monospace;display:block;">[PAGE LOADED]</div>
+<div class="__diag" id="__diag" style="position:fixed;top:0;left:0;right:0;background:#111;color:#0f0;padding:6px 12px;font-size:14px;z-index:9999;font-family:monospace;display:none;">[PAGE LOADED]</div>
 <div class="container">
 
   <!-- ═══ PIXEL WORLD CANVAS ═══ -->
@@ -181,7 +181,7 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
     <div class="room-tab" onclick="switchRoom('bed')" id="tab-bed">🛏️ 臥室</div>
   </div>
 
-  <div style="height:5px;background:#ff0000;position:relative;z-index:999;" id="mark_top"></div>
+  <div id="mark_top" style="height:5px;background:#ff0000;position:relative;z-index:999;display:none;"></div>
   <div class="status-row" style="background:#330000;">
     <div class="status-box"><div class="status-label">痛感等級</div><div class="status-val red" id="painNum">0</div></div>
     <div class="status-box"><div class="status-label">felt_pain</div><div class="status-val orange" id="feltNum">0.0</div></div>
