@@ -99,6 +99,20 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 .evo-item-val.green{color:#2ed573}.evo-item-val.orange{color:#ffa502}
 .evo-progress{width:100%;height:6px;background:#1a1a2e;border-radius:3px;overflow:hidden;margin-top:4px}
 .evo-progress-fill{height:100%;border-radius:3px;transition:width .6s}
+/* Ambient effects */
+.ambient-msg{font-size:12px;color:#aaa}
+.ambient-msg.active{color:#ffa502}
+/* Task degradation */
+#taskList{-webkit-filter:blur(0px);filter:blur(0px);transition:filter .5s}
+#taskList.degraded{-webkit-filter:blur(1.5px);filter:blur(1.5px);opacity:0.7}
+/* Global dashboard */
+#gPain,#gAnx,#gCog,#gEnergy,#gSocial,#gMotiv,#gFE,#gDesire{font-family:monospace}
+/* Pain episode timeline */
+#painTimeline>div{padding:6px 8px;margin-bottom:4px;border-radius:6px}
+/* Body signals */
+#bodyAdvice{font-size:12px}
+/* Allostatic adaptation */
+#alloGrowth{font-size:22px;font-weight:bold;color:#667eea}
 /* Oscillation meter */
 .osc-wrap{display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);margin-bottom:10px}
 .osc-label{font-size:11px;color:#a0a0c0;min-width:60px}
@@ -147,14 +161,15 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 </style>
 </head>
 <body>
-<div id="__diag" style="position:fixed;top:0;left:0;right:0;background:#111;color:#0f0;padding:6px 12px;font-size:14px;z-index:9999;font-family:monospace;">[PAGE LOADED]</div>
+<div class="__diag" id="__diag" style="position:fixed;top:0;left:0;right:0;background:#111;color:#0f0;padding:6px 12px;font-size:14px;z-index:9999;font-family:monospace;display:none;">[PAGE LOADED]</div>
 <div class="container">
 
   <!-- ═══ PIXEL WORLD CANVAS ═══ -->
-  <div class="pixel-scene">
+  <div class="pixel-scene" id="pixelScene">
     <canvas id="pixelCanvas" width="640" height="400"></canvas>
     <div class="room-label" id="roomLabel">🏠 像素小人生活</div>
     <div class="pain-overlay" id="painOverlay"></div>
+    <canvas id="auraCanvas" style="position:absolute;inset:0;pointer-events:none;z-index:3;"></canvas>
   </div>
 
   <div class="room-tabs">
@@ -177,18 +192,250 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
     <div class="status-box"><div class="status-label">痛苦負擔</div><div class="status-val red" id="topPainBurden">0.00</div></div>
     <div class="status-box"><div class="status-label">預期恐懼</div><div class="status-val purple" id="topAntFear">0.0</div></div>
     <div class="status-box"><div class="status-label">創傷記錄</div><div class="status-val" id="topTrauma">0</div></div>
-    <div class="status-box"><div class="status-label">待辦任務</div><div class="status-val" id="topTasks">0</div></div>
   </div>
 
-  <div class="activity-bar" id="activityBar">
-    <span id="activityIcon">🏠</span>
-    <strong id="activityName">加載中…</strong>
-    <span class="activity-tag" id="activityTag">待機</span>
+  <!-- ═══ GLOBAL STATUS DASHBOARD ═══ -->
+  <div class="card" style="margin-bottom:10px;">
+    <div class="card-title">📊 全局狀態總覽 / Global Status Overview <span style="font-size:10px;color:#555;float:right;margin-top:2px;">每3秒自動更新</span></div>
+    <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px;" id="globalDash">
+      <div style="text-align:center;padding:8px 4px;background:rgba(255,71,87,.08);border-radius:8px;border:1px solid rgba(255,71,87,.2);">
+        <div id="gPain" style="font-size:20px;font-weight:900;color:#ff4757;">0</div>
+        <div style="font-size:9px;color:#888;">痛感</div>
+      </div>
+      <div style="text-align:center;padding:8px 4px;background:rgba(255,165,2,.08);border-radius:8px;border:1px solid rgba(255,165,2,.2);">
+        <div id="gAnx" style="font-size:20px;font-weight:900;color:#ffa502;">0</div>
+        <div style="font-size:9px;color:#888;">焦慮</div>
+      </div>
+      <div style="text-align:center;padding:8px 4px;background:rgba(102,126,234,.08);border-radius:8px;border:1px solid rgba(102,126,234,.2);">
+        <div id="gCog" style="font-size:20px;font-weight:900;color:#667eea;">0%</div>
+        <div style="font-size:9px;color:#888;">認知</div>
+      </div>
+      <div style="text-align:center;padding:8px 4px;background:rgba(46,213,115,.08);border-radius:8px;border:1px solid rgba(46,213,115,.2);">
+        <div id="gEnergy" style="font-size:20px;font-weight:900;color:#2ed573;">0%</div>
+        <div style="font-size:9px;color:#888;">能量</div>
+      </div>
+      <div style="text-align:center;padding:8px 4px;background:rgba(102,126,234,.08);border-radius:8px;border:1px solid rgba(102,126,234,.2);">
+        <div id="gSocial" style="font-size:20px;font-weight:900;color:#667eea;">0%</div>
+        <div style="font-size:9px;color:#888;">連結</div>
+      </div>
+      <div style="text-align:center;padding:8px 4px;background:rgba(102,126,234,.08);border-radius:8px;border:1px solid rgba(102,126,234,.2);">
+        <div id="gMotiv" style="font-size:20px;font-weight:900;color:#667eea;">0%</div>
+        <div style="font-size:9px;color:#888;">動機</div>
+      </div>
+      <div style="text-align:center;padding:8px 4px;background:rgba(255,71,87,.08);border-radius:8px;border:1px solid rgba(255,71,87,.2);">
+        <div id="gFE" style="font-size:20px;font-weight:900;color:#ff4757;">0.00</div>
+        <div style="font-size:9px;color:#888;">自由能</div>
+      </div>
+      <div style="text-align:center;padding:8px 4px;background:rgba(255,165,2,.08);border-radius:8px;border:1px solid rgba(255,165,2,.2);">
+        <div id="gDesire" style="font-size:20px;font-weight:900;color:#ffa502;">—</div>
+        <div style="font-size:9px;color:#888;">主導慾望</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+      <div style="flex:1;height:6px;background:#1a1a2e;border-radius:3px;overflow:hidden;"><div id="gPainBar" style="height:6px;background:#ff4757;width:0%;border-radius:3px;transition:width .4s;"></div></div>
+      <div style="flex:1;height:6px;background:#1a1a2e;border-radius:3px;overflow:hidden;"><div id="gAnxBar" style="height:6px;background:#ffa502;width:0%;border-radius:3px;transition:width .4s;"></div></div>
+      <div style="flex:1;height:6px;background:#1a1a2e;border-radius:3px;overflow:hidden;"><div id="gCogBar" style="height:6px;background:#667eea;width:0%;border-radius:3px;transition:width .4s;"></div></div>
+      <div style="flex:1;height:6px;background:#1a1a2e;border-radius:3px;overflow:hidden;"><div id="gEnergyBar" style="height:6px;background:#2ed573;width:0%;border-radius:3px;transition:width .4s;"></div></div>
+    </div>
   </div>
 
-  <!-- ═══ PAIN DISPLAY ═══ -->
+  <!-- ═══ MOTIVATION & MOOD ═══ -->
   <div class="card">
-    <div class="card-title">🔥 實時疼痛等級 / Real-time Pain Level</div>
+    <div class="card-title">🎯 動機與情緒 / Motivation & Mood</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
+      <div style="padding:12px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:#a0a0c0;margin-bottom:6px;letter-spacing:1px;">動機水平 MOTIVATION</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;height:14px;background:#1a1a2e;border-radius:7px;overflow:hidden;">
+            <div id="motivBar" style="height:14px;background:linear-gradient(90deg,#667eea,#2ed573);border-radius:7px;width:50%;transition:width .5s;"></div>
+          </div>
+          <span id="motivPct" style="font-size:14px;font-weight:bold;color:#667eea;min-width:40px;text-align:right;">50%</span>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:#888;">驅動來源: <span id="motivSrc" style="color:#667eea;">加載中…</span></div>
+      </div>
+      <div style="padding:12px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:#a0a0c0;margin-bottom:6px;letter-spacing:1px;">情緒狀態 MOOD</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;" id="moodTags">
+          <span style="padding:2px 10px;border-radius:10px;font-size:11px;background:rgba(46,213,115,.15);color:#2ed573;">平靜</span>
+          <span style="padding:2px 10px;border-radius:10px;font-size:11px;background:rgba(255,165,2,.15);color:#ffa502;">焦慮</span>
+          <span style="padding:2px 10px;border-radius:10px;font-size:11px;background:rgba(255,71,87,.15);color:#ff4757;">痛苦</span>
+          <span style="padding:2px 10px;border-radius:10px;font-size:11px;background:rgba(102,126,234,.15);color:#667eea;">恐懼</span>
+        </div>
+        <div style="font-size:11px;color:#888;">情緒 valence: <span id="moodValence" style="color:#667eea;">0.00</span></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);text-align:center;">
+        <div style="font-size:10px;color:#a0a0c0;margin-bottom:4px;">情緒強度</div>
+        <div id="moodIntensity" style="font-size:28px;font-weight:900;color:#ff4757;">0.00</div>
+      </div>
+      <div style="padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);text-align:center;">
+        <div style="font-size:10px;color:#a0a0c0;margin-bottom:4px;">疼痛峰值</div>
+        <div id="painPeak" style="font-size:28px;font-weight:900;color:#ff4757;">0.0</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ SLEEP & RECOVERY ═══ -->
+  <div class="card">
+    <div class="card-title">😴 睡眠與恢復 / Sleep & Recovery</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div style="text-align:center;padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:10px;color:#a0a0c0;margin-bottom:4px;">睡眠質量</div>
+        <div id="sleepQual" style="font-size:22px;font-weight:900;color:#667eea;">—</div>
+        <div style="height:4px;background:#1a1a2e;border-radius:2px;margin-top:4px;"><div id="sleepQualBar" style="height:4px;background:#667eea;width:0%;border-radius:2px;transition:width .5s;"></div></div>
+      </div>
+      <div style="text-align:center;padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:10px;color:#a0a0c0;margin-bottom:4px;">恢復分數</div>
+        <div id="recoveryScore" style="font-size:22px;font-weight:900;color:#2ed573;">0</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:10px;color:#a0a0c0;margin-bottom:4px;">疲勞程度</div>
+        <div id="fatigueLevel" style="font-size:22px;font-weight:900;color:#ffa502;">0%</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="flex:1;padding:8px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);text-align:center;">
+        <div style="font-size:10px;color:#888;">最近睡眠</div>
+        <div id="lastSleep" style="font-size:13px;font-weight:bold;color:#667eea;">—</div>
+      </div>
+      <div style="flex:1;padding:8px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);text-align:center;">
+        <div style="font-size:10px;color:#888;">剩餘恢復</div>
+        <div id="recoveryRemain" style="font-size:13px;font-weight:bold;color:#2ed573;">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SOCIAL CONNECTION ═══ -->
+  <div class="card">
+    <div class="card-title">🤝 社交連結 / Social Connection</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div style="padding:12px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:#a0a0c0;margin-bottom:6px;letter-spacing:1px;">連結水平</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;height:12px;background:#1a1a2e;border-radius:6px;overflow:hidden;">
+            <div id="socialBondBar" style="height:12px;background:linear-gradient(90deg,#ff4757,#ffa502,#2ed573);width:50%;border-radius:6px;transition:width .5s;"></div>
+          </div>
+          <span id="socialBondPct" style="font-size:13px;font-weight:bold;color:#667eea;">50%</span>
+        </div>
+        <div style="margin-top:6px;display:flex;align-items:center;gap:4px;">
+          <span style="font-size:11px;color:#888;">親密</span>
+          <div style="flex:1;height:8px;background:#1a1a2e;border-radius:4px;overflow:hidden;">
+            <div id="intimacyBar" style="height:8px;background:#ff4757;width:30%;border-radius:4px;transition:width .5s;"></div>
+          </div>
+          <span id="intimacyPct" style="font-size:11px;color:#ff4757;">30%</span>
+        </div>
+      </div>
+      <div style="padding:12px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:#a0a0c0;margin-bottom:6px;letter-spacing:1px;">孤獨感</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;height:12px;background:#1a1a2e;border-radius:6px;overflow:hidden;">
+            <div id="lonelinessBar" style="height:12px;background:linear-gradient(90deg,#2ed573,#ffa502,#ff4757);width:20%;border-radius:6px;transition:width .5s;"></div>
+          </div>
+          <span id="lonelinessPct" style="font-size:13px;font-weight:bold;color:#2ed573;">20%</span>
+        </div>
+        <div style="margin-top:6px;font-size:11px;color:#888;">隔離等級: <span id="isolationLevel" style="color:#ffa502;">低</span></div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#888;padding:8px;background:rgba(255,255,255,.03);border-radius:8px;text-align:center;">
+      互動履歴: <span id="socialHistory" style="color:#667eea;">無</span>
+    </div>
+  </div>
+
+  <!-- ═══ PAIN EPISODE TIMELINE ═══ -->
+  <div class="card">
+    <div class="card-title">📍 疼痛發作時間軸 / Pain Episode Timeline</div>
+    <div style="display:flex;flex-direction:column;gap:4px;" id="painTimeline">
+      <div style="text-align:center;color:#555;font-size:12px;padding:16px;">等待疼痛數據…</div>
+    </div>
+    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+      <div style="text-align:center;padding:8px;background:rgba(255,71,87,.05);border-radius:6px;border:1px solid rgba(255,71,87,.15);">
+        <div style="font-size:10px;color:#888;">今日疼痛峰值</div>
+        <div id="todayPeak" style="font-size:18px;font-weight:bold;color:#ff4757;">0.0</div>
+      </div>
+      <div style="text-align:center;padding:8px;background:rgba(255,165,2,.05);border-radius:6px;border:1px solid rgba(255,165,2,.15);">
+        <div style="font-size:10px;color:#888;">平均痛感</div>
+        <div id="avgPain" style="font-size:18px;font-weight:bold;color:#ffa502;">0.0</div>
+      </div>
+      <div style="text-align:center;padding:8px;background:rgba(102,126,234,.05);border-radius:6px;border:1px solid rgba(102,126,234,.15);">
+        <div style="font-size:10px;color:#888;">疼痛持續</div>
+        <div id="painDuration" style="font-size:18px;font-weight:bold;color:#667eea;">0分鐘</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ BODY SIGNALS ═══ -->
+  <div class="card">
+    <div class="card-title">💓 身體信號 / Body Signals</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;">
+      <div style="text-align:center;padding:10px;background:rgba(255,71,87,.08);border-radius:8px;border:1px solid rgba(255,71,87,.2);">
+        <div style="font-size:18px;">❤️</div>
+        <div id="bodyHeart" style="font-size:14px;font-weight:bold;color:#ff4757;">—</div>
+        <div style="font-size:9px;color:#888;">心率</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:rgba(255,165,2,.08);border-radius:8px;border:1px solid rgba(255,165,2,.2);">
+        <div style="font-size:18px;">🩸</div>
+        <div id="bodyBP" style="font-size:14px;font-weight:bold;color:#ffa502;">—</div>
+        <div style="font-size:9px;color:#888;">血壓</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:rgba(102,126,234,.08);border-radius:8px;border:1px solid rgba(102,126,234,.2);">
+        <div style="font-size:18px;">🧠</div>
+        <div id="bodyStress" style="font-size:14px;font-weight:bold;color:#667eea;">—</div>
+        <div style="font-size:9px;color:#888;">壓力</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:rgba(46,213,115,.08);border-radius:8px;border:1px solid rgba(46,213,115,.2);">
+        <div style="font-size:18px;">🌡️</div>
+        <div id="bodyTemp" style="font-size:14px;font-weight:bold;color:#2ed573;">—</div>
+        <div style="font-size:9px;color:#888;">體溫</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:#888;padding:8px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);text-align:center;" id="bodyAdvice">身體數據需要傳感器支持</div>
+  </div>
+
+
+  <!-- ═══ COMPETENCE & AUTONOMY PROGRESS ═══ -->
+  <div class="card">
+    <div class="card-title">🏆 勝任 & 自主 / Competence & Autonomy</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
+      <div style="padding:12px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:#a0a0c0;margin-bottom:8px;letter-spacing:1px;">勝任 Competence</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="flex:1;height:12px;background:#1a1a2e;border-radius:6px;overflow:hidden;">
+            <div id="competenceBar" style="height:12px;background:linear-gradient(90deg,#667eea,#2ed573);width:40%;border-radius:6px;transition:width .5s;"></div>
+          </div>
+          <span id="competencePct" style="font-size:13px;font-weight:bold;color:#667eea;">40%</span>
+        </div>
+        <div style="font-size:10px;color:#555;">設定點偏離: <span id="compDev" style="color:#ffa502;">0.00</span></div>
+      </div>
+      <div style="padding:12px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:#a0a0c0;margin-bottom:8px;letter-spacing:1px;">自主 Autonomy</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="flex:1;height:12px;background:#1a1a2e;border-radius:6px;overflow:hidden;">
+            <div id="autonomyBar" style="height:12px;background:linear-gradient(90deg,#667eea,#ff4757);width:58%;border-radius:6px;transition:width .5s;"></div>
+          </div>
+          <span id="autonomyPct" style="font-size:13px;font-weight:bold;color:#667eea;">58%</span>
+        </div>
+        <div style="font-size:10px;color:#555;">設定點偏離: <span id="autoDev" style="color:#2ed573;">0.00</span></div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#888;padding:8px;background:rgba(255,255,255,.03);border-radius:8px;text-align:center;">
+      勝任成長: <span id="compGrowth" style="color:#2ed573;">0</span> · 自主成長: <span id="autoGrowth" style="color:#2ed573;">0</span>
+    </div>
+  </div>
+
+
+  <!-- ═══ CONNECTION STATUS ═══ -->
+  <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+    <div id="connStatus" style="font-size:11px;color:#888;display:flex;align-items:center;gap:6px;">
+      <span id="connDot" style="width:8px;height:8px;border-radius:50%;background:#888;display:inline-block;"></span>
+      <span id="connText">連接中…</span>
+      <span id="lastSync" style="color:#555;font-family:monospace;"></span>
+    </div>
+  </div>
+
+  <!-- ═══ GLOBAL STATUS DASHBOARD ═══ -->
+  <div class="card" style="margin-bottom:10px;">
     <div class="pain-display">
       <div class="pain-number lv0" id="mainPainNum">0</div>
       <div class="pain-meta">
@@ -254,10 +501,46 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
     <div class="desire-text" id="desireText">穩態平衡中，無強烈渴望</div>
   </div>
 
+  <!-- ═══ NEUROTRANSMITTERS ═══ -->
+  <div class="card">
+    <div class="card-title">🧪 神經傳導物質 / Neurotransmitters</div>
+    <div class="neuro-grid" id="neuroGrid">
+      <div class="mech-item"><div class="mech-label">💊 多巴胺 Dopamine</div><div class="homeo-bar-wrap"><div class="homeo-bar-fill good" id="neuroDop" style="width:70%"></div></div><div class="mech-val" id="neuroDopVal">0.70</div></div>
+      <div class="mech-item"><div class="mech-label">🌊 血清素 Serotonin</div><div class="homeo-bar-wrap"><div class="homeo-bar-fill good" id="neuroSero" style="width:65%"></div></div><div class="mech-val" id="neuroSeroVal">0.65</div></div>
+      <div class="mech-item"><div class="mech-label">⚡ 去甲腎上腺素 NA</div><div class="homeo-bar-wrap"><div class="homeo-bar-fill warn" id="neuroNA" style="width:30%"></div></div><div class="mech-val" id="neuroNAVal">0.30</div></div>
+      <div class="mech-item"><div class="mech-label">✨ 內啡肽 Endorphin</div><div class="homeo-bar-wrap"><div class="homeo-bar-fill danger" id="neuroEnd" style="width:15%"></div></div><div class="mech-val" id="neuroEndVal">0.15</div></div>
+      <div class="mech-item"><div class="mech-label">🔥 腎上腺素 Adrenaline</div><div class="homeo-bar-wrap"><div class="homeo-bar-fill danger" id="neuroAdr" style="width:80%"></div></div><div class="mech-val" id="neuroAdrVal">0.80</div></div>
+    </div>
+  </div>
+
+  <!-- ═══ SKILLS ═══ -->
+  <div class="card">
+    <div class="card-title">⚡ 技能系統 / Skill System <span class="card-title" style="font-size:11px;color:#667eea;font-weight:normal;" id="skillPoints">技能點: 0</span></div>
+    <div class="skills-grid" id="skillsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="mech-item"><div class="mech-label">💬 溝通 Communication</div><div class="homeo-bar-wrap"><div class="homeo-bar-fill good" id="skill0" style="width:20%"></div></div><div class="mech-val">Lv.<span id="skillLv0">1</span> · <span id="skillXp0">0</span>/100 XP</div></div>
+      <div class="mech-item"><div class="mech-label">🧠 推理 Reasoning</div><div class="homeo-bar-wrap"><div class="homeo-bar-fill good" id="skill1" style="width:20%"></div></div><div class="mech-val">Lv.<span id="skillLv1">1</span> · <span id="skillXp1">0</span>/100 XP</div></div>
+      <div class="mech-item"><div class="mech-label">💡 直覺 Intuition</div><div class="homeo-bar-wrap"><div class="homeo-bar-fill good" id="skill2" style="width:20%"></div></div><div class="mech-val">Lv.<span id="skillLv2">1</span> · <span id="skillXp2">0</span>/100 XP</div></div>
+      <div class="mech-item"><div class="mech-label">💪 耐痛 Pain Tolerance</div><div class="homeo-bar-wrap"><div class="homeo-bar-fill good" id="skill3" style="width:20%"></div></div><div class="mech-val">Lv.<span id="skillLv3">1</span> · <span id="skillXp3">0</span>/100 XP</div></div>
+      <div class="mech-item"><div class="mech-label">🛡️ 恢復 Recovery</div><div class="homeo-bar-wrap"><div class="homeo-bar-fill good" id="skill4" style="width:20%"></div></div><div class="mech-val">Lv.<span id="skillLv4">1</span> · <span id="skillXp4">0</span>/100 XP</div></div>
+      <div class="mech-item"><div class="mech-label">🎯 專注 Focus</div><div class="homeo-bar-wrap"><div class="homeo-bar-fill good" id="skill5" style="width:20%"></div></div><div class="mech-val">Lv.<span id="skillLv5">1</span> · <span id="skillXp5">0</span>/100 XP</div></div>
+      <div class="mech-item"><div class="mech-label">🌱 適應 Adaptation</div><div class="homeo-bar-wrap"><div class="homeo-bar-fill good" id="skill6" style="width:20%"></div></div><div class="mech-val">Lv.<span id="skillLv6">1</span> · <span id="skillXp6">0</span>/100 XP</div></div>
+    </div>
+  </div>
+
+  <!-- ═══ EMOTION TIMELINE ═══ -->
+  <div class="card">
+    <div class="card-title">⏱️ 情緒時間線 / Emotion Timeline</div>
+    <div class="timeline" id="emotionTimeline" style="max-height:160px;overflow-y:auto;"><div class="empty-state">實時記錄中…</div></div>
+  </div>
+
   <!-- ═══ TRAUMA ═══ -->
   <div class="card">
     <div class="card-title">💔 創傷記憶 / Trauma Memories</div>
     <div class="trauma-list" id="traumaList"><div class="empty-state">尚無創傷記錄</div></div>
+    <div id="threatMapWrap" style="margin-top:12px;display:none;">
+      <div class="mech-label" style="font-size:11px;color:#a0a0c0;margin-bottom:6px;">⚠️ 威脅地圖 / Threat Map</div>
+      <div id="threatMap" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </div>
   </div>
 
   <!-- ═══ EVOLUTION ═══ -->
@@ -276,6 +559,108 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
     <div class="card-title">📈 疼痛振蕩曲線 / Pain Oscillation</div>
     <div class="osc-chart-wrap"><canvas id="oscChart"></canvas></div>
     <div class="chart-wrap"><canvas id="chart"></canvas></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:10px;padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+      <span style="font-size:11px;color:#a0a0c0;">主導驅動</span>
+      <span id="dominantDrive" style="font-size:13px;font-weight:bold;color:#667eea;">加載中…</span>
+      <div style="flex:1;height:6px;background:#1a1a2e;border-radius:3px;overflow:hidden;"><div id="driveBar" style="height:100%;width:60%;background:linear-gradient(90deg,#667eea,#ff4757);border-radius:3px;transition:width .5s;"></div></div>
+    </div>
+  </div>
+
+
+  <!-- ═══ FREE ENERGY CONTRIBUTION ═══ -->
+  <div class="card">
+    <div class="card-title">⚡ 自由能分解 / Free Energy Breakdown</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+      <div style="background:rgba(255,71,87,.1);padding:10px;border-radius:8px;border:1px solid rgba(255,71,87,.2);">
+        <div style="font-size:11px;color:#ff6b81;margin-bottom:4px;">痛感貢獻 Pain</div>
+        <div style="font-size:20px;font-weight:bold;color:#ff4757;" id="fePain">0.0000</div>
+        <div style="height:4px;background:#1a1a2e;border-radius:2px;margin-top:4px;"><div id="fePainBar" style="height:4px;background:#ff4757;border-radius:2px;width:0%;transition:width .5s;"></div></div>
+      </div>
+      <div style="background:rgba(255,165,2,.1);padding:10px;border-radius:8px;border:1px solid rgba(255,165,2,.2);">
+        <div style="font-size:11px;color:#ffa502;margin-bottom:4px;">焦慮貢獻 Anxiety</div>
+        <div style="font-size:20px;font-weight:bold;color:#ffa502;" id="feAnx">0.0000</div>
+        <div style="height:4px;background:#1a1a2e;border-radius:2px;margin-top:4px;"><div id="feAnxBar" style="height:4px;background:#ffa502;border-radius:2px;width:0%;transition:width .5s;"></div></div>
+      </div>
+      <div style="background:rgba(102,126,234,.1);padding:10px;border-radius:8px;border:1px solid rgba(102,126,234,.2);">
+        <div style="font-size:11px;color:#667eea;margin-bottom:4px;">認知損耗 Cognitive</div>
+        <div style="font-size:20px;font-weight:bold;color:#667eea;" id="feCog">0.0000</div>
+        <div style="height:4px;background:#1a1a2e;border-radius:2px;margin-top:4px;"><div id="feCogBar" style="height:4px;background:#667eea;border-radius:2px;width:0%;transition:width .5s;"></div></div>
+      </div>
+      <div style="background:rgba(46,213,115,.1);padding:10px;border-radius:8px;border:1px solid rgba(46,213,115,.2);">
+        <div style="font-size:11px;color:#2ed573;margin-bottom:4px;">慾望強度 Desire</div>
+        <div style="font-size:20px;font-weight:bold;color:#2ed573;" id="feDesire">0.0000</div>
+        <div style="height:4px;background:#1a1a2e;border-radius:2px;margin-top:4px;"><div id="feDesireBar" style="height:4px;background:#2ed573;border-radius:2px;width:0%;transition:width .5s;"></div></div>
+      </div>
+    </div>
+    <div style="text-align:center;padding:8px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+      <div style="font-size:10px;color:#888;margin-bottom:2px;">總自由能 / Total Free Energy</div>
+      <div style="font-size:24px;font-weight:900;color:#fff;" id="feTotal">0.0000</div>
+    </div>
+  </div>
+
+  <!-- ═══ ALLOSTATIC ADAPTATION ═══ -->
+  <div class="card">
+    <div class="card-title">🔄 同適應狀態 / Allostatic Adaptation</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+      <div style="text-align:center;padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:10px;color:#a0a0c0;margin-bottom:4px;">成長等級</div>
+        <div style="font-size:22px;font-weight:bold;color:#667eea;" id="alloGrowth">Lv.1</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:10px;color:#a0a0c0;margin-bottom:4px;">設定點偏移</div>
+        <div style="font-size:22px;font-weight:bold;color:#ffa502;" id="alloShift">—</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:10px;color:#a0a0c0;margin-bottom:4px;">適應狀態</div>
+        <div style="font-size:16px;font-weight:bold;color:#2ed573;" id="alloStatus">平衡</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;" id="setpointDeviations">
+      <div style="text-align:center;padding:6px;background:rgba(255,255,255,.03);border-radius:6px;border:1px solid var(--border);">
+        <div style="font-size:9px;color:#888;">能量</div>
+        <div style="font-size:12px;font-weight:bold;color:#667eea;" id="spDevEnergy">0.00</div>
+      </div>
+      <div style="text-align:center;padding:6px;background:rgba(255,255,255,.03);border-radius:6px;border:1px solid var(--border);">
+        <div style="font-size:9px;color:#888;">連結</div>
+        <div style="font-size:12px;font-weight:bold;color:#667eea;" id="spDevSocial">0.00</div>
+      </div>
+      <div style="text-align:center;padding:6px;background:rgba(255,255,255,.03);border-radius:6px;border:1px solid var(--border);">
+        <div style="font-size:9px;color:#888;">勝任</div>
+        <div style="font-size:12px;font-weight:bold;color:#667eea;" id="spDevComp">0.00</div>
+      </div>
+      <div style="text-align:center;padding:6px;background:rgba(255,255,255,.03);border-radius:6px;border:1px solid var(--border);">
+        <div style="font-size:9px;color:#888;">自主</div>
+        <div style="font-size:12px;font-weight:bold;color:#667eea;" id="spDevAuto">0.00</div>
+      </div>
+      <div style="text-align:center;padding:6px;background:rgba(255,255,255,.03);border-radius:6px;border:1px solid var(--border);">
+        <div style="font-size:9px;color:#888;">意義</div>
+        <div style="font-size:12px;font-weight:bold;color:#667eea;" id="spDevPurpose">0.00</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ AMBIENT EFFECTS ═══ -->
+  <div class="card">
+    <div class="card-title">🌤️ 環境動態效果 / Ambient Effects</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:#a0a0c0;margin-bottom:6px;">廚房廚房 / Kitchen</div>
+        <div id="kitchenAmb" style="font-size:12px;color:#aaa;">—</div>
+      </div>
+      <div style="padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:#a0a0c0;margin-bottom:6px;">浴室 / Bathroom</div>
+        <div id="bathAmb" style="font-size:12px;color:#aaa;">—</div>
+      </div>
+      <div style="padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:#a0a0c0;margin-bottom:6px;">臥室 / Bedroom</div>
+        <div id="bedAmb" style="font-size:12px;color:#aaa;">—</div>
+      </div>
+      <div style="padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:#a0a0c0;margin-bottom:6px;">客廳 / Living</div>
+        <div id="livingAmb" style="font-size:12px;color:#aaa;">—</div>
+      </div>
+    </div>
   </div>
 
   <!-- ═══ TRIGGERS ═══ -->
@@ -1206,6 +1591,34 @@ function drawScene(pl){
   else if(char.currentRoom==='kitchen'){drawCharacter(cx-80,cy,pl,char.activity,char.frame,char.facing);}
   else if(char.currentRoom==='bath'){drawCharacter(cx,cy-55,pl,char.activity,char.frame,char.facing);}
   else if(char.currentRoom==='bed'){drawCharacter(cx-80,cy-55,pl,char.activity,char.frame,char.facing);}
+  drawEmotionAura(cx,cy,pl);
+}
+
+// ═══ EMOTION AURA ═══
+function drawEmotionAura(cx,cy,pl){
+  var auraCvs=document.getElementById('auraCanvas');
+  if(!auraCvs)return;
+  var aCtx=auraCvs.getContext('2d');
+  auraCvs.width=auraCvs.offsetWidth||640;
+  auraCvs.height=auraCvs.offsetHeight||400;
+  aCtx.clearRect(0,0,auraCvs.width,auraCvs.height);
+  var scaleW=auraCvs.width/640,scaleH=auraCvs.height/400;
+  var px2=Math.round(cx*PX*scaleW),py2=Math.round(cy*PX*scaleH);
+  var emotion=gameState.emotion||'平靜';
+  var auraColor='#667eea';
+  if(pl>=4){auraColor='rgba(255,23,68,0.4)';}
+  else if(pl>=2){auraColor='rgba(255,99,72,0.3)';}
+  else if(emotion.includes('焦慮')||emotion.includes('不安')){auraColor='rgba(255,165,2,0.3)';}
+  else if(emotion.includes('快樂')||emotion.includes('平靜')){auraColor='rgba(46,213,115,0.25)';}
+  else if(emotion.includes('痛苦')||emotion.includes('恐懼')){auraColor='rgba(255,71,87,0.35)';}
+  var r=40*Math.max(scaleW,scaleH);
+  var grad=aCtx.createRadialGradient(px2,py2,2,px2,py2,r);
+  grad.addColorStop(0,auraColor);
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  aCtx.fillStyle=grad;
+  aCtx.beginPath();
+  aCtx.arc(px2,py2,r,0,Math.PI*2);
+  aCtx.fill();
 }
 
 // ═══ UPDATE UI ═══
@@ -1226,7 +1639,8 @@ function updateUI(){
   document.getElementById('activityName').textContent=ad?ad.name:'待機';
   document.getElementById('activityTag').textContent=ad?(ad.name.substring(0,18)+'…'):'';
   document.getElementById('roomLabel').textContent={living:'🛋️ 客廳',kitchen:'🍳 廚房',bath:'🚽 浴室',bed:'🛏️ 臥室'}[char.currentRoom]||'🏠 像素小人生活';
-  document.getElementById('painOverlay').style.background=info.overlay;
+  var painOv = document.getElementById('painOverlay')||null;
+  if(painOv){var pi=PAIN_INFO[Math.min(gameState.painLevel,5)];if(pi)painOv.style.background=pi.overlay;}
   document.getElementById('phyDesc').textContent=info.phy;
   document.getElementById('menDesc').textContent=info.men;
   document.getElementById('mainPainNum').textContent=pl;document.getElementById('mainPainNum').className='pain-number lv'+pl;
@@ -1333,6 +1747,7 @@ function updateMainCards(d){
   if (taskEl) {
     if (!tasks.length) { taskEl.innerHTML = '<div class="empty-state">暫無任務</div>'; }
     else { taskEl.innerHTML = tasks.map(t => '<div class="trigger-item"><span class="trigger-time">' + (t.created_at || '') + '</span><span class="trigger-reason">' + (t.description || '') + '</span></div>').join(''); }
+    if (painLvl >= 3) { taskEl.classList.add('degraded'); } else { taskEl.classList.remove('degraded'); }
   }
   let hEl = document.getElementById('hint')||null;
   if (hEl) {
@@ -1405,6 +1820,314 @@ function updateMainCards(d){
   oscChartData.push(fp2);
   if (oscChartData.length > 60) oscChartData.shift();
   drawOscChart();
+
+  // ── Neurotransmitter panel ──
+  let neuro = d.neurotransmitters || d.neuro || {};
+  let neuroItems = [
+    {id:'neuroDop', val:'neuroDopVal', key:'dopamine', name:'多巴胺', default:0.7},
+    {id:'neuroSero', val:'neuroSeroVal', key:'serotonin', name:'血清素', default:0.65},
+    {id:'neuroNA', val:'neuroNAVal', key:'noradrenaline', name:'去甲腎上腺素', default:0.3},
+    {id:'neuroEnd', val:'neuroEndVal', key:'endorphin', name:'內啡肽', default:0.15},
+    {id:'neuroAdr', val:'neuroAdrVal', key:'adrenaline', name:'腎上腺素', default:0.2},
+  ];
+  neuroItems.forEach(function(ni){
+    let v = parseFloat(neuro[ni.key] || ni.default);
+    let barEl = document.getElementById(ni.id)||null;
+    let valEl = document.getElementById(ni.val)||null;
+    if (barEl){ barEl.style.width = Math.min(100, Math.round(v * 100)) + '%'; barEl.className = 'homeo-bar-fill ' + (v > 0.6 ? 'good' : (v > 0.3 ? 'warn' : 'danger')); }
+    if (valEl){ valEl.textContent = v.toFixed(2); }
+  });
+
+  // ── Skills panel ──
+  let skills = d.skills || [];
+  let skillPts = document.getElementById('skillPoints')||null;
+  if (skillPts) skillPts.textContent = '技能點: ' + (d.skill_points || d.skillPoints || 0);
+  for (var si = 0; si < 7; si++){
+    var sk = skills[si] || {level:1, xp:0};
+    var barEl = document.getElementById('skill'+si)||null;
+    var lvEl = document.getElementById('skillLv'+si)||null;
+    var xpEl = document.getElementById('skillXp'+si)||null;
+    var pct = Math.min(100, Math.round((sk.xp % 100) || 0));
+    if (barEl){ barEl.style.width = pct + '%'; barEl.className = 'homeo-bar-fill ' + (sk.level >= 4 ? 'good' : (sk.level >= 2 ? 'warn' : 'danger')); }
+    if (lvEl) lvEl.textContent = sk.level || 1;
+    if (xpEl) xpEl.textContent = Math.round(sk.xp || 0);
+  }
+
+  // ── Emotion Timeline ──
+  let emoLogs = d.emotion_log || d.emotionLogs || [];
+  let tlEl = document.getElementById('emotionTimeline')||null;
+  if (tlEl){
+    if (!emoLogs.length){ tlEl.innerHTML = '<div class="empty-state">實時記錄中…</div>'; }
+    else {
+      var recent = emoLogs.slice(-15).reverse();
+      tlEl.innerHTML = recent.map(function(l){
+        var intensity = l.pain_level || 0;
+        var dotColor = intensity === 0 ? '#2ed573' : (intensity <= 2 ? '#ffa502' : '#ff4757');
+        return '<div class="tl-item"><span class="tl-time">'+(l.timestamp||'')+'</span><span class="tl-event" style="color:'+dotColor+'">'+l.emotion+' (Lv.'+intensity+')</span></div>';
+      }).join('');
+    }
+  }
+
+  // ── Threat Map (Trauma) ──
+  let traumaList = d.trauma_memories || [];
+  let threatWrap = document.getElementById('threatMapWrap')||null;
+  let threatMap = document.getElementById('threatMap')||null;
+  if (threatWrap && threatMap){
+    if (traumas.length > 0){
+      threatWrap.style.display = 'block';
+      threatMap.innerHTML = traumas.slice(-12).reverse().map(function(t){
+        var str = t.strength || 0.5;
+        var bg = str > 0.7 ? 'rgba(255,71,87,0.6)' : (str > 0.4 ? 'rgba(255,165,2,0.5)' : 'rgba(255,165,2,0.25)');
+        return '<span style="display:inline-block;padding:3px 8px;border-radius:8px;font-size:11px;background:'+bg+';color:#fff;border:1px solid rgba(255,255,255,0.1);">'+(t.event||'未知')+'</span>';
+      }).join('');
+    } else {
+      threatWrap.style.display = 'none';
+    }
+  }
+
+  // ── Free Energy Breakdown ──
+  var fp3 = parseFloat(d.felt_pain || 0);
+  var anx3 = parseFloat(d.anxiety_level || 0);
+  var cog3 = parseFloat(d.cognitive_capacity || 1);
+  var des3 = parseFloat(d.desire_intensity || 0);
+  var fePainV = fp3 / 5;
+  var feAnxV = anx3 / 100;
+  var feCogV = 1 - cog3;
+  var feDesV = des3;
+  var feTotalV = Math.min(1, fePainV * 0.4 + feAnxV * 0.25 + feCogV * 0.2 + feDesV * 0.15);
+  var fePainEl = document.getElementById('fePain')||null;
+  var feAnxEl = document.getElementById('feAnx')||null;
+  var feCogEl = document.getElementById('feCog')||null;
+  var feDesireEl = document.getElementById('feDesire')||null;
+  var feTotalEl = document.getElementById('feTotal')||null;
+  var fePainBarEl = document.getElementById('fePainBar')||null;
+  var feAnxBarEl = document.getElementById('feAnxBar')||null;
+  var feCogBarEl = document.getElementById('feCogBar')||null;
+  var feDesireBarEl = document.getElementById('feDesireBar')||null;
+  if (fePainEl) fePainEl.textContent = fePainV.toFixed(4);
+  if (feAnxEl) feAnxEl.textContent = feAnxV.toFixed(4);
+  if (feCogEl) feCogEl.textContent = feCogV.toFixed(4);
+  if (feDesireEl) feDesireEl.textContent = feDesV.toFixed(4);
+  if (feTotalEl) { feTotalEl.textContent = feTotalV.toFixed(4); feTotalEl.style.color = feTotalV > 0.5 ? '#ff4757' : feTotalV > 0.2 ? '#ffa502' : '#667eea'; }
+  if (fePainBarEl) fePainBarEl.style.width = Math.min(100, Math.round(fePainV * 100)) + '%';
+  if (feAnxBarEl) feAnxBarEl.style.width = Math.min(100, Math.round(feAnxV * 100)) + '%';
+  if (feCogBarEl) feCogBarEl.style.width = Math.min(100, Math.round(feCogV * 100)) + '%';
+  if (feDesireBarEl) feDesireBarEl.style.width = Math.min(100, Math.round(feDesV * 100)) + '%';
+
+  // ── Dominant Drive ──
+  var domDrive = d.dominant_desire || '—';
+  var domDriveInt = parseFloat(d.desire_intensity || 0);
+  var domDriveEl = document.getElementById('dominantDrive')||null;
+  var driveBarEl = document.getElementById('driveBar')||null;
+  if (domDriveEl) domDriveEl.textContent = domDrive;
+  if (driveBarEl) { driveBarEl.style.width = Math.min(100, Math.round(domDriveInt * 100)) + '%'; driveBarEl.style.background = domDriveInt > 0.7 ? 'linear-gradient(90deg,#ff4757,#d50000)' : domDriveInt > 0.4 ? 'linear-gradient(90deg,#ffa502,#ff4757)' : 'linear-gradient(90deg,#667eea,#2ed573)'; }
+  // ── Allostatic Adaptation ──
+  var ev2 = d.evolution || {};
+  var alloGrowthEl = document.getElementById('alloGrowth')||null;
+  var alloShiftEl = document.getElementById('alloShift')||null;
+  var alloStatusEl = document.getElementById('alloStatus')||null;
+  if (alloGrowthEl) alloGrowthEl.textContent = 'Lv.' + (ev2.growth_level || 1);
+  if (alloShiftEl) { var shift = ev2.setpoint_shift || 0; alloShiftEl.textContent = shift > 0 ? '+' + shift.toFixed(2) : '0.00'; alloShiftEl.style.color = shift > 0 ? '#ffa502' : '#2ed573'; }
+  if (alloStatusEl) { var shift2 = ev2.setpoint_shift || 0; var painSens = ev2.pain_sensitivity || 1; alloStatusEl.textContent = shift2 > 0.1 ? '適應中' : (painSens < 1 ? '低敏化' : '平衡'); alloStatusEl.style.color = shift2 > 0.1 ? '#ffa502' : (painSens < 1 ? '#2ed573' : '#667eea'); }
+  var setpts = d.setpoints || {};
+  var homeo2 = d.homeostatic || {};
+  var spDevKeys = [{key:'energy',elId:'spDevEnergy'},{key:'social_bond',elId:'spDevSocial'},{key:'competence',elId:'spDevComp'},{key:'autonomy',elId:'spDevAuto'},{key:'purpose',elId:'spDevPurpose'}];
+  spDevKeys.forEach(function(sk){ var cur = parseFloat(homeo2[sk.key] || 0); var sp = parseFloat(setpts[sk.key] || 0.7); var dev = cur - sp; var el = document.getElementById(sk.elId)||null; if (el) { el.textContent = (dev >= 0 ? '+' : '') + dev.toFixed(2); el.style.color = dev > 0.05 ? '#2ed573' : (dev < -0.05 ? '#ff4757' : '#667eea'); } });
+  // ── Ambient Effects ──
+  var painLvlA = d.pain_level || 0;
+  var anxLvlA = d.anxiety_level || 0;
+  var ambMap = {kitchen: painLvlA >= 3 ? '🌡️ 熱鍋感強烈' : anxLvlA > 50 ? '🍳 濃煙嗆人' : painLvlA >= 1 ? '🍲 煮食中' : '✨ 無異常', bath: painLvlA >= 3 ? '🚿 水溫過熱' : anxLvlA > 50 ? '💧 水聲過响' : painLvlA >= 1 ? '🚿 溫水淋浴' : '✨ 無異常', bed: painLvlA >= 3 ? '🌙 月光刺眼' : anxLvlA > 50 ? '🌑 陰影籠罩' : painLvlA >= 1 ? '🛏️ 床上翻滾' : '✨ 月光柔和', living: painLvlA >= 3 ? '📺 畫面模糊' : anxLvlA > 50 ? '🔊 噪音乾擾' : painLvlA >= 1 ? '🛋️ 沙發上折騰' : '✨ 環境正常'};
+  var kEl = document.getElementById('kitchenAmb')||null; if (kEl) kEl.textContent = ambMap.kitchen;
+  var bEl = document.getElementById('bathAmb')||null; if (bEl) bEl.textContent = ambMap.bath;
+  var bdEl = document.getElementById('bedAmb')||null; if (bdEl) bdEl.textContent = ambMap.bed;
+  var lEl = document.getElementById('livingAmb')||null; if (lEl) lEl.textContent = ambMap.living;
+
+
+  // ── Connection status ──
+  var connDot = document.getElementById('connDot')||null;
+  var connText = document.getElementById('connText')||null;
+  var lastSync = document.getElementById('lastSync')||null;
+  if (connDot) connDot.style.background = '#2ed573';
+  if (connText) connText.textContent = '已連接';
+  if (lastSync) lastSync.textContent = '同步: '+new Date().toLocaleTimeString();
+
+  // ── Allostatic adaptation indicator ──
+  var evData = d.evolution || {};
+  var allostaticEl = document.getElementById('allostaticIndicator')||null;
+  if (allostaticEl){
+    var gl = ev.growth_level || 1;
+    var shifted = (ev.setpoint_shift || 0) > 0;
+    allostaticEl.innerHTML = 'Lv.'+gl+' · '+(shifted ? '<span style="color:#ffa502">適應+</span>' : '<span style="color:#2ed573">平衡</span>');
+  }
+
+  // ── Global Dashboard ──
+  var pl4=d.pain_level||0, anx4=d.anxiety_level||0, cog4=d.cognitive_capacity||1, homeo4=d.homeostatic||{}, fe4=d.free_energy||0, des4=d.dominant_desire||'—';
+  var gPain=document.getElementById('gPain')||null, gAnx=document.getElementById('gAnx')||null, gCog=document.getElementById('gCog')||null;
+  var gEnergy=document.getElementById('gEnergy')||null, gSocial=document.getElementById('gSocial')||null, gMotiv=document.getElementById('gMotiv')||null;
+  var gFE=document.getElementById('gFE')||null, gDesire=document.getElementById('gDesire')||null;
+  var gPainBar=document.getElementById('gPainBar')||null, gAnxBar=document.getElementById('gAnxBar')||null;
+  var gCogBar=document.getElementById('gCogBar')||null, gEnergyBar=document.getElementById('gEnergyBar')||null;
+  if(gPain){gPain.textContent=pl4;gPain.style.color=pl4>=4?'#ff4757':pl4>=2?'#ffa502':'#2ed573';}
+  if(gAnx){gAnx.textContent=Math.round(anx4);gAnx.style.color=anx4>60?'#ff4757':anx4>30?'#ffa502':'#2ed573';}
+  if(gCog){gCog.textContent=Math.round((1-cog4)*100)+'%';gCog.style.color=cog4<0.3?'#ff4757':cog4<0.6?'#ffa502':'#667eea';}
+  if(gEnergy){gEnergy.textContent=Math.round((homeo4.energy||0)*100)+'%';gEnergy.style.color=(homeo4.energy||0)>0.5?'#2ed573':'#ffa502';}
+  if(gSocial){gSocial.textContent=Math.round((homeo4.social_bond||0)*100)+'%';gSocial.style.color=(homeo4.social_bond||0)>0.5?'#2ed573':'#ffa502';}
+  if(gMotiv){var mot=1-(d.pain_burden||0);gMotiv.textContent=Math.round(mot*100)+'%';gMotiv.style.color=mot>0.5?'#2ed573':'#ffa502';}
+  if(gFE){gFE.textContent=fe4.toFixed(2);gFE.style.color=fe4>0.2?'#ff4757':fe4>0.05?'#ffa502':'#667eea';}
+  if(gDesire)gDesire.textContent=des4;
+  if(gPainBar)gPainBar.style.width=Math.min(100,Math.round(pl4/5*100))+'%';
+  if(gAnxBar)gAnxBar.style.width=Math.min(100,Math.round(anx4))+'%';
+  if(gCogBar)gCogBar.style.width=Math.min(100,Math.round((1-cog4)*100))+'%';
+  if(gEnergyBar)gEnergyBar.style.width=Math.min(100,Math.round((homeo4.energy||0)*100))+'%';
+
+  // ── Motivation & Mood ──
+  var moodInt=d.mood_intensity||d.mood_intensity_val||0;
+  var moodV=d.mood_valence||0;
+  var painPeakV=parseFloat(d.felt_pain||0);
+  var motivSrcV=d.motivation_source||d.dominant_desire||'平衡';
+  var motivPctV=Math.round((1-(d.pain_burden||0))*100);
+  var moodIntEl=document.getElementById('moodIntensity')||null;
+  var moodValEl=document.getElementById('moodValence')||null;
+  var motivPctEl=document.getElementById('motivPct')||null;
+  var motivSrcEl=document.getElementById('motivSrc')||null;
+  var painPeakEl=document.getElementById('painPeak')||null;
+  var motivBarEl=document.getElementById('motivBar')||null;
+  if(moodIntEl){moodIntEl.textContent=moodInt.toFixed(2);moodIntEl.style.color=moodInt>0.6?'#ff4757':moodInt>0.3?'#ffa502':'#667eea';}
+  if(moodValEl){moodValEl.textContent=moodV.toFixed(2);moodValEl.style.color=moodV>0?'#ff4757':'#2ed573';}
+  if(motivPctEl){motivPctEl.textContent=motivPctV+'%';motivPctEl.style.color=motivPctV>50?'#2ed573':'#ffa502';}
+  if(motivSrcEl)motivSrcEl.textContent=motivSrcV;
+  if(painPeakEl)painPeakEl.textContent=painPeakV.toFixed(1);
+  if(motivBarEl)motivBarEl.style.width=motivPctV+'%';
+
+  // ── Sleep & Recovery ──
+  var sleepQualV=d.sleep_quality||d.sleepQuality||0.5;
+  var recoveryV=d.recovery_score||d.recoveryScore||0;
+  var fatigueV=d.fatigue_level||d.fatigue||0;
+  var sleepQualEl=document.getElementById('sleepQual')||null;
+  var sleepQualBarEl=document.getElementById('sleepQualBar')||null;
+  var recoveryScoreEl=document.getElementById('recoveryScore')||null;
+  var fatigueLevelEl=document.getElementById('fatigueLevel')||null;
+  var lastSleepEl=document.getElementById('lastSleep')||null;
+  var recoveryRemainEl=document.getElementById('recoveryRemain')||null;
+  if(sleepQualEl){sleepQualEl.textContent=Math.round(sleepQualV*100)+'%';sleepQualEl.style.color=sleepQualV>0.6?'#2ed573':sleepQualV>0.3?'#ffa502':'#ff4757';}
+  if(sleepQualBarEl)sleepQualBarEl.style.width=Math.min(100,Math.round(sleepQualV*100))+'%';
+  if(recoveryScoreEl){recoveryScoreEl.textContent=Math.round(recoveryV);recoveryScoreEl.style.color=recoveryV>60?'#2ed573':recoveryV>30?'#ffa502':'#ff4757';}
+  if(fatigueLevelEl){fatigueLevelEl.textContent=Math.round(fatigueV*100)+'%';fatigueLevelEl.style.color=fatigueV>0.6?'#ff4757':fatigueV>0.3?'#ffa502':'#2ed573';}
+  if(lastSleepEl)lastSleepEl.textContent=d.last_sleep||'—';
+  if(recoveryRemainEl)recoveryRemainEl.textContent=Math.round((1-fatigueV)*100)+'%';
+
+  // ── Social Connection ──
+  var socialBondV=homeo4.social_bond||0;
+  var intimacyV=d.intimacy||d.intimacy_level||0;
+  var lonelinessV=d.loneliness||0;
+  var socialBondBarEl=document.getElementById('socialBondBar')||null;
+  var socialBondPctEl=document.getElementById('socialBondPct')||null;
+  var intimacyBarEl=document.getElementById('intimacyBar')||null;
+  var intimacyPctEl=document.getElementById('intimacyPct')||null;
+  var lonelinessBarEl=document.getElementById('lonelinessBar')||null;
+  var lonelinessPctEl=document.getElementById('lonelinessPct')||null;
+  var isolationEl=document.getElementById('isolationLevel')||null;
+  var socialHistoryEl=document.getElementById('socialHistory')||null;
+  if(socialBondBarEl)socialBondBarEl.style.width=Math.min(100,Math.round(socialBondV*100))+'%';
+  if(socialBondPctEl)socialBondPctEl.textContent=Math.round(socialBondV*100)+'%';
+  if(intimacyBarEl)intimacyBarEl.style.width=Math.min(100,Math.round(intimacyV*100))+'%';
+  if(intimacyPctEl)intimacyPctEl.textContent=Math.round(intimacyV*100)+'%';
+  if(lonelinessBarEl)lonelinessBarEl.style.width=Math.min(100,Math.round(lonelinessV*100))+'%';
+  if(lonelinessPctEl)lonelinessPctEl.textContent=Math.round(lonelinessV*100)+'%';
+  if(isolationEl){isolationEl.textContent=lonelinessV>0.6?'高':lonelinessV>0.3?'中':'低';isolationEl.style.color=lonelinessV>0.6?'#ff4757':lonelinessV>0.3?'#ffa502':'#2ed573';}
+  if(socialHistoryEl)socialHistoryEl.textContent=d.social_history||d.recent_social||'無互動';
+
+
+  // ── Pain Episode Timeline ──
+  var painTimelineEl=document.getElementById('painTimeline')||null;
+  var todayPeakEl=document.getElementById('todayPeak')||null;
+  var avgPainEl=document.getElementById('avgPain')||null;
+  var painDurEl=document.getElementById('painDuration')||null;
+  var painLogsV=d.pain_triggers||d.emotion_log||[];
+  if(todayPeakEl){var peaks=painLogsV.filter(function(p){return p.type&&p.type.includes('pain');});todayPeakEl.textContent=peaks.length>0?Math.max(...peaks.map(function(p){return p.strength||0;})).toFixed(1):'0.0';}
+  if(avgPainEl){var painLogs2=d.emotion_log||[];var avg=0;if(painLogs2.length>0){avg=painLogs2.reduce(function(s,p){return s+(p.pain_level||0);},0)/painLogs2.length;}avgPainEl.textContent=avg.toFixed(1);}
+  if(painDurEl){var contPain=d.pain_duration_minutes||d.pain_continuous||0;painDurEl.textContent=contPain+'分鐘';}
+  if(painTimelineEl&&painLogsV.length>0){
+    var recentPain=painLogsV.slice(-6).reverse();
+    painTimelineEl.innerHTML=recentPain.map(function(p){
+      var t=p.timestamp||'';
+      var lvl=p.pain_level||0;
+      var col=lvl>=4?'#ff4757':lvl>=2?'#ffa502':'#667eea';
+      var bg=lvl>=4?'rgba(255,71,87,0.15)':lvl>=2?'rgba(255,165,2,0.15)':'rgba(102,126,234,0.15)';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:'+bg+';border-radius:6px;border-left:3px solid '+col+';"><span style="font-size:10px;color:#888;font-family:monospace;">'+t+'</span><span style="font-size:12px;color:'+col+';">Lv.'+lvl+' '+(p.emotion||'')+'</span></div>';
+    }).join('');
+  }
+
+  // ── Body Signals ──
+  var bodyHeartEl=document.getElementById('bodyHeart')||null;
+  var bodyBPEl=document.getElementById('bodyBP')||null;
+  var bodyStressEl=document.getElementById('bodyStress')||null;
+  var bodyTempEl=document.getElementById('bodyTemp')||null;
+  var bodyAdviceEl=document.getElementById('bodyAdvice')||null;
+  if(bodyHeartEl)bodyHeartEl.textContent=d.heart_rate||d.heartrate||'—';
+  if(bodyBPEl)bodyBPEl.textContent=d.blood_pressure||d.bp||'—';
+  if(bodyStressEl)bodyStressEl.textContent=d.stress_level||d.stress||'—';
+  if(bodyTempEl)bodyTempEl.textContent=d.body_temperature||d.temp||'—';
+  if(bodyAdviceEl){var advice='正常';if(pl4>=3)advice='⚠️ 疼痛影響心率，建議放鬆';else if(anx4>60)advice='🔶 高焦慮，練習深呼吸';else if(cog4<0.3)advice='🧠 認知受限，避免高難度任務';bodyAdviceEl.textContent=advice;}
+
+
+  // ── Competence & Autonomy ──
+  var compV=homeo4.competence||0;
+  var autoV=homeo4.autonomy||0;
+  var setpts2=d.setpoints||{};
+  var compBarEl=document.getElementById('competenceBar')||null;
+  var compPctEl=document.getElementById('competencePct')||null;
+  var compDevEl=document.getElementById('compDev')||null;
+  var autoBarEl=document.getElementById('autonomyBar')||null;
+  var autoPctEl=document.getElementById('autonomyPct')||null;
+  var autoDevEl=document.getElementById('autoDev')||null;
+  var compGrowthEl=document.getElementById('compGrowth')||null;
+  var autoGrowthEl=document.getElementById('autoGrowth')||null;
+  if(compBarEl)compBarEl.style.width=Math.min(100,Math.round(compV*100))+'%';
+  if(compPctEl)compPctEl.textContent=Math.round(compV*100)+'%';
+  if(compDevEl){var cDev=(compV-(setpts2.competence||0.7));compDevEl.textContent=(cDev>=0?'+':'')+cDev.toFixed(2);compDevEl.style.color=cDev>0?'#2ed573':'#ff4757';}
+  if(autoBarEl)autoBarEl.style.width=Math.min(100,Math.round(autoV*100))+'%';
+  if(autoPctEl)autoPctEl.textContent=Math.round(autoV*100)+'%';
+  if(autoDevEl){var aDev=(autoV-(setpts2.autonomy||0.7));autoDevEl.textContent=(aDev>=0?'+':'')+aDev.toFixed(2);autoDevEl.style.color=aDev>0?'#2ed573':'#ff4757';}
+  if(compGrowthEl)compGrowthEl.textContent=d.competence_growth||d.compGrowth||0;
+  if(autoGrowthEl)autoGrowthEl.textContent=d.autonomy_growth||d.autoGrowth||0;
+
+
+  // ── Visual effects: Pain overlay & Anxiety tint & Cognitive impairment ──
+  var painLvl = d.pain_level || 0;
+  var anxLvl = d.anxiety_level || 0;
+  var cogCap = d.cognitive_capacity || 1;
+  var painOv = document.getElementById('painOverlay')||null;
+  var pixelScene = document.getElementById('pixelScene')||null;
+  if (painOv){
+    var overlayStyle = PAIN_INFO[painLvl] ? PAIN_INFO[painLvl].overlay : PAIN_INFO[0].overlay;
+    // Blend anxiety blue tint
+    if (anxLvl > 30){
+      var anxAlpha = Math.min(0.3, (anxLvl / 100) * 0.4);
+      overlayStyle = overlayStyle.replace(/rgba\(([0-9,.]+)\)/, function(m){
+        var parts = m.match(/[0-9.]+/g);
+        return 'rgba('+Math.round(parts[0])+','+Math.round(parts[1])+','+Math.round(parseFloat(parts[2])+40)+','+parts[3]+')';
+      });
+    }
+    painOv.style.background = overlayStyle;
+  }
+  // Cognitive impairment: shake or blur canvas
+  if (pixelScene){
+    if (cogCap < 0.3){
+      pixelScene.style.animation = 'restlessShake 0.3s infinite';
+      pixelScene.style.filter = 'blur(1px)';
+    } else if (cogCap < 0.5){
+      pixelScene.style.animation = 'restlessShake 0.6s infinite';
+      pixelScene.style.filter = 'blur(0.5px)';
+    } else if (cogCap < 0.7){
+      pixelScene.style.animation = 'none';
+      pixelScene.style.filter = 'blur(0.2px)';
+    } else {
+      pixelScene.style.animation = 'none';
+      pixelScene.style.filter = 'none';
+    }
+  }
+
   } catch(e) { console.error("[updateMainCards] FATAL:", e.message, e.stack); }
 }
 
@@ -1532,16 +2255,15 @@ function switchRoom(room) {
 }
 
 function init() {
-  console.log("[init] START, gameState.painLevel="+gameState.painLevel);
   char.currentRoom='living';char.x=16;char.y=52;
   startActivity(0);
   initChart();
-  // Init osc chart
   let oscCvs = document.getElementById('oscChart');
   if (oscCvs) { oscCvs.width = oscCvs.parentElement.offsetWidth; oscCvs.height = oscCvs.parentElement.offsetHeight || 100; }
+  drawScene(gameState.painLevel);
   setInterval(() => { tick++; updateChar(); drawScene(gameState.painLevel); }, 100);
   setInterval(fetchState, 3000);
-  setTimeout(fetchState, 200); // Delay slightly to ensure DOM is ready
+  setTimeout(fetchState, 200);
 }
 window.addEventListener('load', init);
 </script>
