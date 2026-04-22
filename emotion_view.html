@@ -1873,9 +1873,9 @@ function updateMainCards(d){
   let threatWrap = document.getElementById('threatMapWrap')||null;
   let threatMap = document.getElementById('threatMap')||null;
   if (threatWrap && threatMap){
-    if (traumas.length > 0){
+    if (traumaList.length > 0){
       threatWrap.style.display = 'block';
-      threatMap.innerHTML = traumas.slice(-12).reverse().map(function(t){
+      threatMap.innerHTML = traumaList.slice(-12).reverse().map(function(t){
         var str = t.strength || 0.5;
         var bg = str > 0.7 ? 'rgba(255,71,87,0.6)' : (str > 0.4 ? 'rgba(255,165,2,0.5)' : 'rgba(255,165,2,0.25)');
         return '<span style="display:inline-block;padding:3px 8px;border-radius:8px;font-size:11px;background:'+bg+';color:#fff;border:1px solid rgba(255,255,255,0.1);">'+(t.event||'未知')+'</span>';
