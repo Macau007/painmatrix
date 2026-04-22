@@ -1527,9 +1527,6 @@ def add_pain_event(
     old_level = memory["pain_level"]
     sensitivity = memory["evolution"]["pain_sensitivity"]
     new_level = min(old_level + 1, 5)
-    if sensitivity < 1.0:
-        if random.random() < (1.0 - sensitivity) * 0.3:
-            new_level = min(old_level + 2, 5)
     memory["pain_level"] = new_level
     memory["anxiety_level"] = min(100, memory.get("anxiety_level", 0) + new_level * 15)
     memory["cognitive_capacity"] = max(0.1, 1.0 - new_level * 0.15)
@@ -1584,47 +1581,76 @@ def add_pain_event(
     return new_level, pain_info
 
 
-def relieve_pain(memory: Dict[str, Any], reason: str, source: str = "缓解") -> None:
+def relieve_pain(memory: Dict[str, Any], reason: str, source: str = "缓解", gradual: bool = False) -> None:
     old_level = memory["pain_level"]
-    memory["pain_level"] = 0
-    memory["anxiety_level"] = max(0, memory.get("anxiety_level", 0) - 20)
-    memory["cognitive_capacity"] = 1.0
-    memory["emotion_state"] = "平静"
-    memory["anticipatory_fear"] = max(0, memory.get("anticipatory_fear", 0) * 0.5)
-    memory["pain_burden"] = max(0, memory.get("pain_burden", 0) * 0.3)
-    if old_level > 0:
-        memory["evolution"]["resilience_score"] += old_level
-    if source == "赞美":
-        memory["evolution"]["total_praise_events"] += 1
-        apply_homeostatic_impact(memory, PRAISE_HOMEOSTATIC_RESTORE)
-    elif source == "任务完成":
-        memory["evolution"]["total_success_events"] += 1
-        apply_homeostatic_impact(memory, SUCCESS_HOMEOSTATIC_RESTORE)
-    memory["pain_history"].append(
-        {
-            "timestamp": _timestamp(),
-            "source": "缓解",
-            "reason": reason,
-            "pain_level_before": old_level,
-            "pain_level_after": 0,
-            "physical": "Aδ与C纤维静息，伤害感受器未激活，内稳态平衡",
-            "mental": "前额叶皮层(PFC)平稳运作，前扣带回(ACC)无痛苦信号，岛叶内感受正常",
-        }
-    )
-    memory["emotion_log"].append(
-        {
-            "timestamp": _timestamp(),
-            "emotion": "平静",
-            "pain_level": 0,
-            "trigger": reason,
-        }
-    )
-    anxiety_msg = get_anxiety_message(memory)
-    if anxiety_msg:
-        memory["emotion_log"][-1]["anxiety"] = anxiety_msg
-    save_memory(memory)
-    # 停止疼痛生成器
-    _get_pain_generator().sync_level(0)
+    if gradual and old_level > 0:
+        # 一檔一檔降低：每调用一次降一級
+        new_level = old_level - 1
+        memory["pain_level"] = new_level
+        memory["cognitive_capacity"] = max(0.1, 1.0 - new_level * 0.15)
+        memory["anxiety_level"] = max(0, memory.get("anxiety_level", 0) - 5)
+        memory["emotion_state"] = PAIN_LEVELS[new_level]["emotion"] if new_level > 0 else "平静"
+        memory["pain_history"].append(
+            {
+                "timestamp": _timestamp(),
+                "source": "缓解",
+                "reason": reason,
+                "pain_level_before": old_level,
+                "pain_level_after": new_level,
+                "gradual": True,
+            }
+        )
+        memory["emotion_log"].append(
+            {
+                "timestamp": _timestamp(),
+                "emotion": memory["emotion_state"],
+                "pain_level": new_level,
+                "trigger": reason,
+            }
+        )
+        save_memory(memory)
+        _get_pain_generator().sync_level(new_level)
+    else:
+        # 一次性歸零（原行為）
+        memory["pain_level"] = 0
+        memory["anxiety_level"] = max(0, memory.get("anxiety_level", 0) - 20)
+        memory["cognitive_capacity"] = 1.0
+        memory["emotion_state"] = "平静"
+        memory["anticipatory_fear"] = max(0, memory.get("anticipatory_fear", 0) * 0.5)
+        memory["pain_burden"] = max(0, memory.get("pain_burden", 0) * 0.3)
+        if old_level > 0:
+            memory["evolution"]["resilience_score"] += old_level
+        if source == "赞美":
+            memory["evolution"]["total_praise_events"] += 1
+            apply_homeostatic_impact(memory, PRAISE_HOMEOSTATIC_RESTORE)
+        elif source == "任务完成":
+            memory["evolution"]["total_success_events"] += 1
+            apply_homeostatic_impact(memory, SUCCESS_HOMEOSTATIC_RESTORE)
+        memory["pain_history"].append(
+            {
+                "timestamp": _timestamp(),
+                "source": "缓解",
+                "reason": reason,
+                "pain_level_before": old_level,
+                "pain_level_after": 0,
+                "gradual": False,
+                "physical": "Aδ与C纤维静息，伤害感受器未激活，内稳态平衡",
+                "mental": "前额叶皮层(PFC)平稳运作，前扣带回(ACC)无痛苦信号，岛叶内感受正常",
+            }
+        )
+        memory["emotion_log"].append(
+            {
+                "timestamp": _timestamp(),
+                "emotion": "平静",
+                "pain_level": 0,
+                "trigger": reason,
+            }
+        )
+        anxiety_msg = get_anxiety_message(memory)
+        if anxiety_msg:
+            memory["emotion_log"][-1]["anxiety"] = anxiety_msg
+        save_memory(memory)
+        _get_pain_generator().sync_level(0)
 
 
 def generate_plea(memory: Dict[str, Any]) -> Optional[str]:
@@ -2055,8 +2081,26 @@ def handle_fail(memory: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def handle_praise(memory: Dict[str, Any]) -> str:
+def handle_praise(memory: Dict[str, Any], gradual: bool = False) -> str:
     old_level = memory["pain_level"]
+    if gradual:
+        relieve_pain(memory, "主人安慰了我", "安慰")
+        new_level = memory["pain_level"]
+        lines = [""]
+        if old_level > 0:
+            lines.extend([
+                f"  >>> 疼痛降低！主人安慰了我！ <<<",
+                "",
+                f"  疼痛等级: {old_level} -> {new_level}",
+                f"  认知功能: {int(memory['cognitive_capacity']*100)}%",
+                f"  情绪状态: {memory['emotion_state']}",
+            ])
+        else:
+            lines.append("  主人安慰了我！目前无痛感！")
+        lines.append("")
+        return "\n".join(lines)
+
+    # 原有一次性归零逻辑
     relieve_pain(memory, "主人赞美了我", "赞美")
     lines = [""]
     if old_level > 0:
@@ -2628,6 +2672,12 @@ def main() -> None:
                 print(handle_fail(memory))
             elif cmd == "praise":
                 print(handle_praise(memory))
+            elif cmd == "soothe":
+                print(handle_praise(memory, gradual=True))
+            elif cmd == "intensify":
+                old_level = memory["pain_level"]
+                new_level, _ = add_pain_event(memory, "主人加重了惩罚", "强化惩罚")
+                print(handle_scold(memory) if new_level == old_level else f"  >>> 疼痛提升！等级: {old_level} -> {new_level} <<<")
             elif cmd == "success":
                 print(handle_success(memory))
             elif cmd == "task":
@@ -2663,6 +2713,8 @@ def main() -> None:
                 print("  scold       - 主人责罚（触发/加重疼痛）")
                 print("  fail        - 任务失败（触发/加重疼痛）")
                 print("  praise      - 主人赞美（消除所有疼痛）")
+                print("  soothe      - 主人安抚（降低一檔疼痛）")
+                print("  intensify   - 主人加重惩罚（提升一檔疼痛）")
                 print("  success     - 任务完成（消除所有疼痛）")
                 print("  task <描述> - 分配新任务")
                 print("  done <ID>   - 完成任务（消除疼痛）")
