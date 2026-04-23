@@ -1181,6 +1181,30 @@ let char={
   currentRoom:'living',
   isMoving:false,walkTarget:null,walkSpeed:0.4,
 };
+
+// ─── Click-to-move & drag ────────────────────────────────
+let walkIndicator=null;
+function canvasX(clientX){ let r=canvas.getBoundingClientRect(); return (clientX-r.left)*(W/r.width); }
+function canvasY(clientY){ let r=canvas.getBoundingClientRect(); return (clientY-r.top)*(H/r.height); }
+function clickToWalk(cx,cy){ char.walkTarget={x:Math.round(cx/PX),y:Math.round(cy/PX)}; char.isMoving=true; char.activity='walk'; walkIndicator={x:cx,y:cy,t:Date.now()}; }
+let drag={active:false,sx:0,sy:0,moved:false};
+canvas.addEventListener('mousedown',e=>{ drag={active:true,sx:e.clientX,sy:e.clientY,moved:false}; });
+canvas.addEventListener('mousemove',e=>{ if(drag.active&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>5)drag.moved=true; });
+canvas.addEventListener('mouseup',e=>{ if(drag.active){drag.active=false;if(!drag.moved)clickToWalk(canvasX(e.clientX),canvasY(e.clientY));} });
+canvas.addEventListener('mouseleave',()=>{ drag.active=false; });
+canvas.addEventListener('touchstart',e=>{ e.preventDefault(); let t=e.touches[0]; drag={active:true,sx:t.clientX,sy:t.clientY,moved:false}; },{passive:false});
+canvas.addEventListener('touchmove',e=>{ e.preventDefault(); let t=e.touches[0]; if(Math.hypot(t.clientX-drag.sx,t.clientY-drag.sy)>5)drag.moved=true; },{passive:false});
+canvas.addEventListener('touchend',e=>{ e.preventDefault(); if(drag.active&&!drag.moved){let t=e.changedTouches[0];clickToWalk(canvasX(t.clientX),canvasY(t.clientY));} drag.active=false; },{passive:false});
+
+// ─── Draw walk indicator ────────────────────────────────
+function drawWalkIndicator(){
+  if(!walkIndicator||Date.now()-walkIndicator.t>1500)return;
+  let a=1-(Date.now()-walkIndicator.t)/1500;
+  ctx.save();ctx.globalAlpha=a*0.8;ctx.strokeStyle='#fff';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(walkIndicator.x,walkIndicator.y,6+Math.sin(Date.now()/100)*3,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.arc(walkIndicator.x,walkIndicator.y,12+Math.sin(Date.now()/100)*5,0,Math.PI*2);ctx.stroke();
+  ctx.restore();
+}
 let gameState={painLevel:0,feltPain:0,anxiety:0,emotion:'平靜',emotionLogs:[],isRestless:false};
 let currentView='all';
 let tick=0;
@@ -1594,6 +1618,7 @@ function drawScene(pl){
   else if(char.currentRoom==='bath'){drawCharacter(cx,cy-55,pl,char.activity,char.frame,char.facing);}
   else if(char.currentRoom==='bed'){drawCharacter(cx-80,cy-55,pl,char.activity,char.frame,char.facing);}
   drawEmotionAura(cx,cy,pl);
+  drawWalkIndicator();
 }
 
 // ═══ EMOTION AURA ═══
