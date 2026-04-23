@@ -9,7 +9,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:10px}
 .container{max-width:960px;margin:0 auto}
-.pixel-scene{position:relative;background:#0d0d2b;border:3px solid #333;border-radius:8px;overflow:hidden;margin-bottom:14px;aspect-ratio:8/5;max-height:300px}
+.pixel-scene{position:relative;background:#0d0d2b;border:3px solid #333;border-radius:8px;overflow:hidden;margin-bottom:14px}
 #pixelCanvas{display:block;width:100%;image-rendering:pixelated}
 .room-label{position:absolute;top:8px;left:10px;background:rgba(0,0,0,0.6);color:#fff;font-size:12px;padding:3px 10px;border-radius:4px;pointer-events:none;font-family:monospace;z-index:10}
 .pain-overlay{position:absolute;inset:0;pointer-events:none;transition:background .8s;z-index:5}
@@ -166,7 +166,7 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 
   <!-- ═══ PIXEL WORLD CANVAS ═══ -->
   <div class="pixel-scene" id="pixelScene">
-    <canvas id="pixelCanvas" width="640" height="400"></canvas>
+    <canvas id="pixelCanvas" width="960" height="600"></canvas>
     <div class="room-label" id="roomLabel">🏠 像素小人生活</div>
     <div class="pain-overlay" id="painOverlay"></div>
     <canvas id="auraCanvas" style="position:absolute;inset:0;pointer-events:none;z-index:3;"></canvas>
@@ -718,8 +718,8 @@ window.__PAIN_STATE__ = {"pain_level": 4, "felt_pain": 4.0, "cognitive_capacity"
 
 const canvas = document.getElementById('pixelCanvas');
 const ctx = canvas.getContext('2d');
-const W=640, H=400; ctx.imageSmoothingEnabled=false;
-const PX=4;
+const W=960, H=600; ctx.imageSmoothingEnabled=false;
+const PX=6;
 
 const C={
   bg:'#0d0d2b',wall:'#1e1e4a',floorA:'#2a2a50',floorB:'#222244',
