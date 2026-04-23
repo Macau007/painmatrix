@@ -356,6 +356,67 @@ let char = {
   targetRoom:null,
 };
 
+// ─── Drag / Click-to-move ────────────────────────────────
+let drag = {active:false, startX:0, startY:0, moved:false};
+let walkIndicator = null; // {x, y, t: timestamp}
+
+function canvasX(clientX){
+  let r = canvas.getBoundingClientRect();
+  return (clientX - r.left) * (W / r.width);
+}
+function canvasY(clientY){
+  let r = canvas.getBoundingClientRect();
+  return (clientY - r.top) * (H / r.height);
+}
+function clickToWalk(cx, cy){
+  let target = {x: Math.round(cx/PX), y: Math.round(cy/PX)};
+  char.walkTarget = target;
+  char.isMoving = true;
+  char.activity = 'walk';
+  walkIndicator = {x: cx, y: cy, t: Date.now()};
+}
+canvas.addEventListener('mousedown', e=>{
+  drag.active = true;
+  drag.startX = e.clientX; drag.startY = e.clientY;
+  drag.moved = false;
+});
+canvas.addEventListener('mousemove', e=>{
+  if(drag.active){
+    let d = Math.hypot(e.clientX-drag.startX, e.clientY-drag.startY);
+    if(d > 5) drag.moved = true;
+  }
+});
+canvas.addEventListener('mouseup', e=>{
+  if(drag.active){
+    let d = Math.hypot(e.clientX-drag.startX, e.clientY-drag.startY);
+    drag.active = false;
+    if(!drag.moved){
+      clickToWalk(canvasX(e.clientX), canvasY(e.clientY));
+    }
+  }
+});
+canvas.addEventListener('mouseleave', ()=>{ drag.active = false; });
+// Touch support
+canvas.addEventListener('touchstart', e=>{
+  e.preventDefault();
+  let t = e.touches[0];
+  drag.active = true; drag.startX = t.clientX; drag.startY = t.clientY; drag.moved = false;
+},{passive:false});
+canvas.addEventListener('touchmove', e=>{
+  e.preventDefault();
+  let t = e.touches[0];
+  let d = Math.hypot(t.clientX-drag.startX, t.clientY-drag.startY);
+  if(d>5) drag.moved = true;
+},{passive:false});
+canvas.addEventListener('touchend', e=>{
+  e.preventDefault();
+  if(drag.active && !drag.moved){
+    let t = e.changedTouches[0];
+    clickToWalk(canvasX(t.clientX), canvasY(t.clientY));
+  }
+  drag.active = false;
+},{passive:false});
+
 let gameState = {
   painLevel:0, feltPain:0, anxiety:0,
   emotion:'平靜', emotionLogs:[], dominantDesire:'—',
@@ -806,6 +867,23 @@ function updateChar(){
       char.activity = a.pose;
       char.activityTimer = 0;
     }
+  }
+  // Draw click walk indicator
+  if(walkIndicator && Date.now() - walkIndicator.t < 1500){
+    let a = 1 - (Date.now()-walkIndicator.t)/1500;
+    ctx.save();
+    ctx.globalAlpha = a * 0.8;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(walkIndicator.x, walkIndicator.y, 6+Math.sin(Date.now()/100)*3, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(walkIndicator.x, walkIndicator.y, 12+Math.sin(Date.now()/100)*5, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  } else if(walkIndicator){
+    walkIndicator = null;
   }
 }
 
