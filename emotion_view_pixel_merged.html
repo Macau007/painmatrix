@@ -111,7 +111,7 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 
   <!-- ═══ PIXEL WORLD CANVAS ═══ -->
   <div class="pixel-scene">
-    <canvas id="pixelCanvas" width="640" height="400"></canvas>
+    <canvas id="pixelCanvas" width="960" height="600"></canvas>
     <div class="room-label" id="roomLabel">🏠 像素小人生活</div>
     <div class="pain-overlay" id="painOverlay"></div>
   </div>
@@ -247,8 +247,8 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 
 const canvas = document.getElementById('pixelCanvas');
 const ctx = canvas.getContext('2d');
-const W=640, H=400; ctx.imageSmoothingEnabled=false;
-const PX=4;
+const W=960, H=600; ctx.imageSmoothingEnabled=false;
+const PX=6;
 
 const C={
   bg:'#0d0d2b',wall:'#1e1e4a',floorA:'#2a2a50',floorB:'#222244',

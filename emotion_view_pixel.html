@@ -49,7 +49,7 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 <div class="container">
 
   <div class="pixel-scene">
-    <canvas id="pixelCanvas" width="640" height="400"></canvas>
+    <canvas id="pixelCanvas" width="960" height="600"></canvas>
     <div class="room-label" id="roomLabel">🏠 像素小人生活</div>
     <div class="pain-overlay" id="painOverlay"></div>
   </div>
@@ -106,9 +106,9 @@ body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;backgroun
 
 const canvas = document.getElementById('pixelCanvas');
 const ctx = canvas.getContext('2d');
-const W = 640, H = 400;
+const W = 960, H = 600;
 ctx.imageSmoothingEnabled = false;
-const PX = 4;
+const PX = 6;
 
 // ─── Color Palette ───────────────────────────────────────
 const C = {
